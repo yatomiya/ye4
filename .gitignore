@@ -1,0 +1,10 @@
+bin/
+classes/
+.settings/
+.classpath
+.gitignore
+.project
+build/
+.gradle/
+build.gradle
+gradle.properties

@@ -1,0 +1,1 @@
+Utility library for eclipse e4 rcp.

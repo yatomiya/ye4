@@ -1,0 +1,46 @@
+/*******************************************************************************
+ * Copyright (c) 2014,2015 Hideki Yatomi
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ ******************************************************************************/
+package net.yatomiya.e4.ui.util;
+
+import java.util.*;
+import org.eclipse.e4.ui.model.application.ui.basic.*;
+import org.eclipse.e4.ui.model.application.ui.menu.*;
+import net.yatomiya.e4.util.*;
+
+public class DynamicMenuContribution {
+    public static MDirectMenuItem createMDirectMenuItem() {
+        return EModelUtils.createElement(MDirectMenuItem.class);
+    }
+
+    public static List<MMenuElement> createPartContextMenu(
+        MPart part,
+        String holderMenuId,
+        String contextMenuId) {
+        MMenu holderMenu = CUtils.findFirst(part.getMenus(), e -> e.getElementId().equals(holderMenuId));
+        if (holderMenu == null)
+            return Collections.EMPTY_LIST;
+        MMenu contextMenu = (MMenu)CUtils.findFirst(holderMenu.getChildren(), e -> e.getElementId().equals(contextMenuId));
+        if (contextMenu == null)
+            return Collections.EMPTY_LIST;
+
+        return CUtils.map(contextMenu.getChildren(), e -> EModelUtils.cloneElement(e));
+    }
+
+    public static void addContextMenuBlock(
+        List<MMenuElement> list,
+        MPart part,
+        String holderMenuId,
+        String contextMenuId) {
+        if (list.size() > 0) {
+            list.add(EModelUtils.createElement(MMenuSeparator.class));
+        }
+
+        list.addAll(createPartContextMenu(part, holderMenuId, contextMenuId));
+    }
+}
+
