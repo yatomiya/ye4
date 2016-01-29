@@ -40,7 +40,7 @@ class StyleViewerPresentationRepairer implements IPresentationDamager, IPresenta
         if (insertedText.length() == 0)
             return new Region(replacedOffset, 0);
 
-        List<TextStyleNode> list = document.getTextStyleNodes(replacedOffset, insertedText.length());
+        List<StyleNode> list = document.getStyleNodes(replacedOffset, insertedText.length());
         if (list.size() == 0)
             return new Region(replacedOffset, 0);
 
@@ -85,7 +85,7 @@ class StyleViewerPresentationRepairer implements IPresentationDamager, IPresenta
 
         List<StyleRange> list = new ArrayList<>();
 
-        for (TextStyleNode node : document.getTextStyleNodes(offset, length))  {
+        for (StyleNode node : document.getStyleNodes(offset, length))  {
             StyleRange range = createStyleRange(node);
             if (range != null)
                 list.add(range);
@@ -96,9 +96,9 @@ class StyleViewerPresentationRepairer implements IPresentationDamager, IPresenta
         setLineAccessor.setLineIndent(viewer, offset, length);
     }
 
-    private StyleRange createStyleRange(TextStyleNode node) {
+    private StyleRange createStyleRange(StyleNode node) {
         String text = node.getText();
-        Map<StyleAttribute, Object> map = node.getCascadedAttributeMap();
+        Map<StyleAttribute, Object> map = node.getContextAttributeMap();
         if (JUtils.isEmpty(text) || map.size() == 0)
             return null;
 
@@ -157,13 +157,13 @@ class StyleViewerPresentationRepairer implements IPresentationDamager, IPresenta
                 StyleDocument doc = viewer.getDocument();
                 StyledText st = viewer.getTextWidget();
                 Object renderer = rendererField.get(st);
-                List<TextStyleNode> list = doc.getTextStyleNodes(offset, length);
+                List<StyleNode> list = doc.getStyleNodes(offset, length);
                 if (list.size() == 0)
                     return;
                 int lineProcessed = -1;
                 int lineBlockStart = -1;
                 int lineBlockEnd = -1;
-                for (TextStyleNode node : list) {
+                for (StyleNode node : list) {
                     int modelStartLine = doc.getLineOfOffset(node.getOffset());
                     int si = viewer.modelLine2WidgetLine(modelStartLine);
                     if (lineBlockStart < 0)
@@ -210,9 +210,9 @@ class StyleViewerPresentationRepairer implements IPresentationDamager, IPresenta
             }
         }
 
-        private LineAttribute createLineAttribute(StyleViewer viewer, TextStyleNode node) {
+        private LineAttribute createLineAttribute(StyleViewer viewer, StyleNode node) {
             String text = node.getText();
-            Map<StyleAttribute, Object> map = node.getCascadedAttributeMap();
+            Map<StyleAttribute, Object> map = node.getContextAttributeMap();
             if (JUtils.isEmpty(text) || map.size() == 0)
                 return null;
 

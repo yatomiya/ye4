@@ -33,7 +33,8 @@ public class StandardHttpClient extends OkHttpClient {
         getDispatcher().cancel(new Object() {
                 @Override
                 public boolean equals(Object o) {
-                    return true;
+                    // match all object.
+                    return o != null;
                 }
             });
     }

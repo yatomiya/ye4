@@ -8,8 +8,8 @@
 package net.yatomiya.e4.ui.style;
 
 import java.util.*;
-import java.util.function.*;
 import org.eclipse.jface.text.*;
+import groovy.lang.*;
 import net.yatomiya.e4.ui.style.viewer.*;
 import net.yatomiya.e4.util.*;
 
@@ -18,24 +18,32 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
     private StyleNode parent;
     private List<StyleNode> children;
     private boolean isEnable;
+    private String text;
+    private boolean cancelNextBlockNewline;
 
     private Map<Object, Object> dataMap;
     private Map<StyleAttribute, String> attrMap;
-    private Map<StyleAttribute, Object> csdAttrMap;
+    private Map<StyleAttribute, Object> contextAttrMap;
 
     private int docRegionOffset;
     private int docRegionLength;
 
     public StyleNode(StyleTag tag) {
+        this(tag, null);
+    }
+
+    public StyleNode(StyleTag tag, String text) {
         this.tag = tag;
+        this.text = text;
 
         parent = null;
         children = Collections.EMPTY_LIST;
         isEnable = true;
+        cancelNextBlockNewline = false;
 
         dataMap = Collections.EMPTY_MAP;
         attrMap = Collections.EMPTY_MAP;
-        csdAttrMap = Collections.EMPTY_MAP;
+        contextAttrMap = Collections.EMPTY_MAP;
 
         docRegionOffset = 0;
         docRegionLength = 0;
@@ -77,12 +85,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
     }
 
     public List<StyleNode> getEnabledChildren() {
-        List<StyleNode> list = new ArrayList<>();
-        for (StyleNode child : children) {
-            if (child.isEnable())
-                list.add(child);
-        }
-        return list;
+        return CUtils.filter(getChildren(), n -> n.isEnable());
     }
 
     public void addChild(StyleNode node) {
@@ -122,8 +125,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
     }
 
     private void doReplaceChild(int index, int removeLength, List<StyleNode> replaceNodeList) {
-        StyleNode rootNode = getRoot();
-        StyleDocument doc = rootNode.getData(StyleDocument.class);
+        StyleDocument doc = getContextData(StyleDocument.class);
         IRegion replaceRegion = null;
 
         if (removeLength > 0) {
@@ -148,7 +150,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                 StyleNode n = children.get(index);
                 children.remove(index);
                 n.parent = null;
-                n.cascadeAttributeAll();
+                n.evaluateContextAttributeAll();
             }
 
             if (children.size() == 0)
@@ -163,7 +165,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
             {
                 // To avoid enormous replacing character in Document, which causes enormous document changed events,
                 // we format block in child node before adding it to node in Document.
-                StyleNode dummy = StyleTag.TAG_SPAN.createStyleNode();
+                StyleNode dummy = StyleTag.SPAN.createStyleNode();
                 dummy.children = new ArrayList<>();
                 dummy.children.addAll(replaceNodeList);
                 dummy.formatBlock();
@@ -174,7 +176,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
 
             for (StyleNode n : replaceNodeList) {
                 n.parent = this;
-                n.cascadeAttributeAll();
+                n.evaluateContextAttributeAll();
             }
         }
 
@@ -193,11 +195,14 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
     }
 
     protected void doDocumentReplace(IRegion region, String replaceText) {
-        StyleNode rootNode = getRoot();
-        StyleDocument doc = rootNode.getData(StyleDocument.class);
+        StyleDocument doc = getContextData(StyleDocument.class);
         if (doc == null)
             return;
 
+        if (replaceText == null)
+            replaceText = "";
+
+        StyleNode rootNode = getRoot();
         rootNode.calculateTextRegionTree();
         try {
             doc.replace(region.getOffset(), region.getLength(), replaceText);
@@ -207,15 +212,36 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         rootNode.formatBlock();
     }
 
+    public void setText(String text) {
+        if (JUtils.nullEquals(getText(), text))
+            return;
+
+        this.text = text;
+
+        StyleDocument doc = getContextData(StyleDocument.class);
+        if (doc != null) {
+            doDocumentReplace(new Region(getOffset(), getLength()), text);
+        }
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    void setCancelNextBlockNewline(boolean v) {
+        cancelNextBlockNewline = v;
+    }
+
+    boolean isCancelNextBlockNewline() {
+        return cancelNextBlockNewline;
+    }
+
     public String buildText() {
         StringBuilder sb = new StringBuilder();
 
         visitNodeTree(node -> {
-                if (node instanceof TextStyleNode) {
-                    String text = ((TextStyleNode)node).getText();
-                    if (text != null) {
-                        sb.append(text);
-                    }
+                if (!JUtils.isEmpty(node.getText())) {
+                    sb.append(node.getText());
                 }
                 return true;
             });
@@ -239,12 +265,12 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
             }
 
             visitNodeTree(node -> {
-                    node.evalCascadedAttribute(attr);
+                    node.evaluateContextAttribute(attr);
                     return true;
                 });
 
             if (attr.isPresentational()) {
-                StyleViewer viewer = getCascadedData(StyleViewer.class);
+                StyleViewer viewer = getContextData(StyleViewer.class);
                 if (viewer != null) {
                     viewer.invalidateTextPresentation(getOffset(), getLength());
                 }
@@ -252,35 +278,35 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         }
     }
 
-    protected void cascadeAttributeAll() {
+    protected void evaluateContextAttributeAll() {
         visitNodeTree(node -> {
-                if (node.csdAttrMap.size() > 0)
-                    node.csdAttrMap.clear();
+                if (node.contextAttrMap.size() > 0)
+                    node.contextAttrMap.clear();
 
                 Set<StyleAttribute> set = new HashSet();
-                if (node.getParent() != null && node.getParent().csdAttrMap.size() > 0)
-                    set.addAll(node.getParent().csdAttrMap.keySet());
+                if (node.getParent() != null && node.getParent().contextAttrMap.size() > 0)
+                    set.addAll(node.getParent().contextAttrMap.keySet());
                 if (node.attrMap.size() > 0)
                     set.addAll(node.attrMap.keySet());
 
                 for (StyleAttribute attr : set) {
-                    node.evalCascadedAttribute(attr);
+                    node.evaluateContextAttribute(attr);
                 }
                 return true;
             });
     }
 
-    protected void evalCascadedAttribute(StyleAttribute attr) {
+    protected void evaluateContextAttribute(StyleAttribute attr) {
         Object value = null;
         String str = attrMap.get(attr);
-        if (JUtils.isNotEmpty(str)) {
+        if (!JUtils.isEmpty(str)) {
             value = attr.parseValue(str);
         }
 
         if (attr.isCascadable()) {
             Object cascadedValue = null;
             if (getParent() != null)
-                cascadedValue = getParent().csdAttrMap.get(attr);
+                cascadedValue = getParent().contextAttrMap.get(attr);
 
             if (cascadedValue == null) {
                 // value is value.
@@ -289,20 +315,20 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
             } else if (value == StyleAttribute.DEFAULT_VALUE) {
                 value = null;
             } else {
-                value = attr.applyCascadeValue(value, cascadedValue);
+                value = attr.evaluateContextValue(value, cascadedValue);
             }
         }
 
         if (value == null) {
-            csdAttrMap.remove(attr);
+            contextAttrMap.remove(attr);
 
-            if (csdAttrMap.size() == 0)
-                csdAttrMap = Collections.EMPTY_MAP;
+            if (contextAttrMap.size() == 0)
+                contextAttrMap = Collections.EMPTY_MAP;
         } else {
-            if (csdAttrMap == Collections.EMPTY_MAP)
-                csdAttrMap = new SmallMap<>();
+            if (contextAttrMap == Collections.EMPTY_MAP)
+                contextAttrMap = new SmallMap<>();
 
-            csdAttrMap.put(attr, value);
+            contextAttrMap.put(attr, value);
         }
     }
 
@@ -323,12 +349,12 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         return Collections.unmodifiableMap(attrMap);
     }
 
-    public Object getCascadedAttribute(StyleAttribute attr) {
-        return csdAttrMap.get(attr);
+    public Object getContextAttribute(StyleAttribute attr) {
+        return contextAttrMap.get(attr);
     }
 
-    public Map<StyleAttribute, Object> getCascadedAttributeMap() {
-        return Collections.unmodifiableMap(csdAttrMap);
+    public Map<StyleAttribute, Object> getContextAttributeMap() {
+        return Collections.unmodifiableMap(contextAttrMap);
     }
 
     public Object getData(Object key) {
@@ -343,15 +369,15 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         return Collections.unmodifiableMap(dataMap);
     }
 
-    public Object getCascadedData(Object key) {
+    public Object getContextData(Object key) {
         StyleNode node = findAncestor(n -> n.getData(key) != null);
         if (node != null)
             return node.getData(key);
         return null;
     }
 
-    public <T> T getCascadedData(Class<T> clazz) {
-        return (T)getCascadedData((Object)clazz);
+    public <T> T getContextData(Class<T> clazz) {
+        return (T)getContextData((Object)clazz);
     }
 
     public void setData(Object key, Object value) {
@@ -371,35 +397,36 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
     public boolean isEnable() {
         return isEnable;
     }
-/*
-  not implemented as for now.
+
+    public boolean isContextEnable() {
+        return findAncestor(n -> !n.isEnable()) == null;
+    }
+
     public void setEnable(boolean v) {
         if (isEnable != v) {
-            boolean oldActive = isActive();
+            boolean oldEnable = isEnable;
+            boolean oldContextEnable = isContextEnable();
 
             isEnable = v;
+            boolean isContextEnable = isContextEnable();
 
-            cascadeAttributeAll();
+            evaluateContextAttributeAll();
 
-            StyleNode rootNode = getRoot();
-            StyleDocument doc = rootNode.getData(StyleDocument.class);
-            if (doc != null) {
-                if (isEnable) {
-                    if (isActive()) {
-                        String nodeText = buildText();
-                        StyleNode aboveNode = findUpstream(n -> (n != this) && (n.isActive()));
+            if (oldContextEnable != isContextEnable) {
+                StyleDocument doc = getContextData(StyleDocument.class);
+
+                if (doc != null) {
+                    if (isContextEnable) {
+                        StyleNode aboveNode = findUpward(n -> (n != this) && n.isContextEnable() && getText() != null);
+
+                        int offset = 0;
                         if (aboveNode != null) {
-                            int offset = 0;
-                            if (aboveNode == getParent())
-                                offset = aboveNode.getOffset();
-                            else
-                                offset = aboveNode.getOffset() + aboveNode.getLength();
-
-                            doDocumentReplace(new Region(offset, 0), nodeText);
+                            offset = aboveNode.getOffset() + aboveNode.getLength();
                         }
-                    }
-                } else {
-                    if (oldActive) {
+
+                        String nodeText = buildText();
+                        doDocumentReplace(new Region(offset, 0), nodeText);
+                    } else {
                         doDocumentReplace(new Region(getOffset(), getLength()), "");
                     }
                 }
@@ -407,16 +434,28 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         }
     }
 
-    public boolean isActive() {
-        StyleNode node = this;
-        while (node != null) {
-            if (!node.isEnable())
-                return false;
-            node = node.getParent();
+    protected void runScriptAttribute(StyleAttribute attr, TemplateManager templateManager) {
+        String scriptString = getAttribute(attr);
+        if (JUtils.isEmpty(scriptString))
+            return;
+        Script script = templateManager.getScript(scriptString);
+        if (script != null) {
+            script.setProperty("node", this);
+            script.run();
         }
-        return true;
     }
-*/
+
+    public void update(TemplateManager templateManager) {
+        runScriptAttribute(StyleAttribute.ONUPDATE, templateManager);
+    }
+
+    public void updateTree(TemplateManager templateManager) {
+        visitTree(node -> {
+                node.update(templateManager);
+                return true;
+            });
+    }
+
     public static interface StyleNodeVisitor {
         // if returns false, child nodes is skipped.
         boolean visit(StyleNode node);
@@ -447,38 +486,6 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
         return result;
     }
 
-    public boolean visitUpstream(Predicate<StyleNode> visitor) {
-        boolean result = true;
-
-        result = visitor.test(this);
-
-        if (result && getParent() != null) {
-            int index = getParent().getChildren().indexOf(this);
-            if (index == 0) {
-                return getParent().visitUpstream(visitor);
-            } else {
-                StyleNode node = getParent().getChildren().get(index - 1);
-                while (node.getChildren().size() > 0) {
-                    node = node.getChildren().get(node.getChildren().size() - 1);
-                }
-                return node.visitUpstream(visitor);
-            }
-        }
-        return result;
-    }
-
-    public void update() {
-        getTag().update(this);
-    }
-
-    public void updateTree() {
-        visitNodeTree(node -> {
-                node.update();
-                return true;
-            });
-    }
-
-
     private void calculateTextRegionTree() {
         visitNodeTree(new StyleNodeVisitor() {
                 int offset = 0;
@@ -489,11 +496,8 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                     node.docRegionOffset = offset;
                     node.docRegionLength = 0;
 
-                    if (node instanceof TextStyleNode) {
-                        String text = ((TextStyleNode)node).getText();
-                        if (JUtils.isNotEmpty(text)) {
-                            offset += text.length();
-                        }
+                    if (node.getText() != null) {
+                        offset += node.getText().length();
                     }
                     return true;
                 }
@@ -513,7 +517,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
 
     public void formatBlock() {
         class Formatter {
-            TextStyleNode lastTextNode;
+            StyleNode lastTextNode;
             char lastChar = '\n';
             char lastLastChar = '\n';
 
@@ -529,7 +533,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                 if (node.getTag().isBlock()) {
                     if (lastChar == '\n') {
                         if (nodeChildren.size() > 0
-                            && nodeChildren.get(0).getTag() == StyleTag.TAG_INTERNAL_NEWLINE_FOR_BLOCK) {
+                            && nodeChildren.get(0).getTag() == StyleTag.INTERNAL_NEWLINE_FOR_BLOCK) {
                             node.removeChild(0);
                         }
                     } else {
@@ -538,17 +542,17 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                             lastChar = '\n';
 
                             if (nodeChildren.size() == 0
-                                || nodeChildren.get(0).getTag() != StyleTag.TAG_INTERNAL_NEWLINE_FOR_BLOCK) {
-                                node.addChild(0, StyleTag.TAG_INTERNAL_NEWLINE_FOR_BLOCK.createStyleNode());
+                                || nodeChildren.get(0).getTag() != StyleTag.INTERNAL_NEWLINE_FOR_BLOCK) {
+                                node.addChild(0, StyleTag.INTERNAL_NEWLINE_FOR_BLOCK.createStyleNode());
                             }
                         }
                     }
                 } else {
-                    String text = node instanceof TextStyleNode ? ((TextStyleNode)node).getText() : null;
-                    if (JUtils.isNotEmpty(text)) {
-                        lastTextNode = (TextStyleNode)node;
+                    String s = node.getText();
+                    if (!JUtils.isEmpty(s)) {
+                        lastTextNode = node;
                         lastLastChar = lastChar;
-                        lastChar = text.charAt(text.length() - 1);
+                        lastChar = s.charAt(s.length() - 1);
                     }
                 }
 
@@ -560,7 +564,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                     if (lastChar == '\n') {
                         if (lastLastChar == '\n') {
                             if (nodeChildren.size() > 0
-                                && nodeChildren.get(nodeChildren.size() - 1).getTag() == StyleTag.TAG_INTERNAL_NEWLINE_FOR_BLOCK) {
+                                && nodeChildren.get(nodeChildren.size() - 1).getTag() == StyleTag.INTERNAL_NEWLINE_FOR_BLOCK) {
                                 node.removeChild(node.getChildren().size() - 1);
                             }
                         }
@@ -568,7 +572,7 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                         lastLastChar = lastChar;
                         lastChar = '\n';
 
-                        node.addChild(StyleTag.TAG_INTERNAL_NEWLINE_FOR_BLOCK.createStyleNode());
+                        node.addChild(StyleTag.INTERNAL_NEWLINE_FOR_BLOCK.createStyleNode());
                     }
                 }
             }
@@ -597,11 +601,11 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
 
                     sb.append(String.format("<%s ", node.getTag().getName()));
                     for (Map.Entry<StyleAttribute, String> entry : node.attrMap.entrySet()) {
-                        sb.append(String.format("%s=\"%s\" ", entry.getKey().getName(), entry.getValue().toString(), 10));
+                        sb.append(String.format("%s=\"%s\" ", entry.getKey().getName(), entry.getValue().toString()));
                     }
                     if (showCascadedAttribute) {
-                        for (Map.Entry<StyleAttribute, Object> entry : node.csdAttrMap.entrySet()) {
-                            sb.append(String.format("%s=\'%s\' ", entry.getKey().getName(), entry.getValue().toString(), 10));
+                        for (Map.Entry<StyleAttribute, Object> entry : node.contextAttrMap.entrySet()) {
+                            sb.append(String.format("%s=\'%s\' ", entry.getKey().getName(), entry.getValue().toString()));
                         }
                     }
 
@@ -610,12 +614,10 @@ public class StyleNode implements TreeNode<StyleNode>, IRegion {
                     if (node.getChildren().size() > 0)
                         sb.append("\n");
 
-                    if (node instanceof TextStyleNode) {
-                        String s = ((TextStyleNode)node).getText();
-                        if (s != null) {
-                            s = s.replace("\n", "\\n");
-                            sb.append(s);
-                        }
+                    String s = node.getText();
+                    if (s != null) {
+                        s = s.replace("\n", "\\n");
+                        sb.append(s);
                     }
 
                     return true;

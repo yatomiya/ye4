@@ -11,6 +11,9 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.*;
+import org.eclipse.e4.core.contexts.*;
+import org.eclipse.e4.ui.model.application.ui.basic.*;
+import org.eclipse.e4.ui.model.application.ui.menu.*;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.*;
 import org.eclipse.swt.custom.*;
@@ -18,6 +21,7 @@ import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.widgets.*;
+import net.yatomiya.e4.ui.workbench.renderers.swt.*;
 import net.yatomiya.e4.util.*;
 
 public class UIUtils {
@@ -304,6 +308,71 @@ public class UIUtils {
                 }
             }
         }.start();
+    }
+
+    public static void disableUntilLineMetricsCalculatingFinished(StyledText st) {
+        doWhenLineMetricsCalculatingFinished(st, true, () -> {});
+    }
+
+    /**
+     * EMenuService.registerContextMenu() の内部処理を直接呼び出す。
+     * EMenuService.registerContextMenu() は MPart ひとつにつきひとつのコンテキストメニューを登録する
+     * 使い方を想定している。ひとつのパート内で複数のコントロールに複数のコンテキストメニューを登録したい場合には使えない。
+     * この内部メソッドを使えば、コントロール毎にコンテキストメニューを登録できる。
+     * ここで登録する MPopupMenu はアプリケーションモデルにつながっていなくても動作しているようだが、本当に安全かは不明。
+     *
+     */
+    public static Menu registerContextMenu(Control control, MPopupMenu popupMenu, IEclipseContext context) {
+        Method method = JUtils.findMethod(org.eclipse.e4.ui.internal.workbench.swt.MenuService.class,
+                                          "registerMenu",
+                                          Control.class,
+                                          MPopupMenu.class,
+                                          IEclipseContext.class);
+        Menu menu = null;
+        try {
+            menu = (Menu)method.invoke(null, control, popupMenu, context);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+        }
+
+        if (menu == null)
+            return null;
+
+        /**
+         * - registerContextMenu()を使うと、登録した PopupMenuImpl への参照が切れずにメモリに残ってしまう。
+         * - Application.e4xmi に登録済みの MPopupMenu を使っても発生するので renderer 内部の問題なのでは？
+         * - 参照ルートが複雑すぎて追跡を断念。
+         * - 大量のメモリリークが発生するのは、 PopupMenuImpl.transientData に renderer が Control を
+         * 登録し、 Control からメニューモデル、ビューオブジェクトが参照されデータが丸々メモリに残ってしまうため。
+         * とりあえず、 transientData をクリアすれば メニューモデル への参照は切れて大量リークは防げる。
+         * - Part.getMenu は　renderer 内部からも状態を監視しており、外部でいじると renderer 内部の状態との整合性がとれなくなる
+         * 可能性がある。 Part.getMenu を使わずにモデルメニューを生成する方法があればいいのだが。
+         * 15.11.23
+         */
+        control.addDisposeListener(
+            event -> {
+                // renderer の作業オブジェクトが残っているため、まとめてクリア
+                popupMenu.getTransientData().clear();
+
+                popupMenu.setToBeRendered(false);
+
+                // 通常、 Part.getMenus() は Part のクローズ時にまとめて廃棄される。 MenuManagerRenderer 内では、
+                // このタイミング以外で getMenus() 内部がいじられる状況に対応していない。
+                // remove しただけでは MenuManagerRenderer 内部に PopupMenuImpl への参照が残ってしまうので、手作業でクリアする。
+                try {
+                    MenuManagerRenderer renderer = (MenuManagerRenderer)popupMenu.getRenderer();
+                    JUtils.findMethod(MenuManagerRenderer.class, "unlinkMenu", MMenu.class).invoke(renderer, popupMenu);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                }
+            });
+
+        return menu;
+    }
+
+    public static Menu registerContextMenu(MPart part, String menuId, Control control) {
+        MPopupMenu popupMenu = EModelUtils.find(part, MPopupMenu.class, menuId);
+        if (popupMenu == null)
+            return null;
+        return registerContextMenu(control, popupMenu, part.getContext());
     }
 
     /**

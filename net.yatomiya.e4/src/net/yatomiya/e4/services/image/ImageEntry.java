@@ -13,13 +13,13 @@ import java.util.function.*;
 import org.eclipse.swt.graphics.*;
 import com.squareup.okhttp.*;
 import net.yatomiya.e4.ui.image.*;
-import net.yatomiya.e4.ui.util.*;
 import net.yatomiya.e4.util.*;
 
 public class ImageEntry {
     ImageService service;
     HttpUrl url;
-    StorageManager.EntryData eData;
+    EntryData eData;
+    String name;
     File storageFile;
     UpdateHandler updateHandler;
 
@@ -119,7 +119,8 @@ public class ImageEntry {
     ImageEntry(ImageService service, HttpUrl url) {
         this.service = service;
         this.url = url;
-        this.eData = service.getStorageManager().getEntryData(url.toString());
+
+        eData = service.getStorageManager().getEntryData(url.toString());
 
         storageFile = service.getStorageManager().createImageStorageFile(eData.filename);
 
@@ -184,6 +185,10 @@ public class ImageEntry {
 
     public HttpUrl getUrl() {
         return url;
+    }
+
+    public EntryData getEntryData() {
+        return eData;
     }
 
     public Image[] getImages(ImageType type) {

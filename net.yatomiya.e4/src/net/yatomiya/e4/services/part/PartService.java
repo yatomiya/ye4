@@ -166,7 +166,7 @@ public class PartService {
 
         if (part == null) {
             part = createPart(descId);
-            if (JUtils.isNotEmpty(containerType)) {
+            if (!JUtils.isEmpty(containerType)) {
                 part.getPersistedState().put(PartService.PART_CONTAINER_TYPE, containerType);
             }
         }

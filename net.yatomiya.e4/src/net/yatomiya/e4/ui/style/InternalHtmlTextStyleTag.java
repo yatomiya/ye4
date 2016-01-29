@@ -10,20 +10,15 @@ package net.yatomiya.e4.ui.style;
 import org.jsoup.nodes.*;
 import net.yatomiya.e4.util.*;
 
-public class TextStyleTag extends StyleTag {
-    public static final String PREFORMATTED_KEY = TextStyleTag.class.getName() + ":preformatted_key";
+public class InternalHtmlTextStyleTag extends StyleTag {
+    public static final String PREFORMATTED_KEY = InternalHtmlTextStyleTag.class.getName() + ":preformatted_key";
 
-    public TextStyleTag(String tag) {
+    public InternalHtmlTextStyleTag(String tag) {
         super(tag, false);
     }
 
     @Override
-    public TextStyleNode createStyleNode() {
-        return new TextStyleNode(this);
-    }
-
-    @Override
-    protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+    public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
         if (node instanceof TextNode) {
             Boolean pre = (Boolean)builder.getData(PREFORMATTED_KEY);
             String text = null;
@@ -33,7 +28,7 @@ public class TextStyleTag extends StyleTag {
                 text = parseNodeText((TextNode)node, builder);
             }
             if (text != null)
-                ((TextStyleNode)styleNode).setText(text);
+                styleNode.setText(text);
         }
     }
 
@@ -50,7 +45,7 @@ public class TextStyleTag extends StyleTag {
             } else if (prevNode instanceof Element) {
                 Element e = (Element)prevNode;
                 StyleTag tag = builder.getStyleTag(e);
-                if (tag.isBlock() || tag == StyleTag.TAG_BR)
+                if (tag.isBlock() || tag == StyleTag.BR)
                     trimHead = true;
             }
             if (trimHead)
@@ -64,7 +59,7 @@ public class TextStyleTag extends StyleTag {
             } else if (nextNode instanceof Element) {
                 Element e = (Element)nextNode;
                 StyleTag tag = builder.getStyleTag(e);
-                if (tag.isBlock() || tag == StyleTag.TAG_BR)
+                if (tag.isBlock() || tag == StyleTag.BR)
                     trimTail = true;
             }
             if (trimTail)

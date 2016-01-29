@@ -8,12 +8,13 @@
 package net.yatomiya.e4.ui.style;
 
 import org.jsoup.nodes.*;
+import net.yatomiya.e4.util.*;
 
 public class StyleTag {
     private String name;
     private boolean isBlock;
 
-    protected StyleTag(String name, boolean isBlock) {
+    public StyleTag(String name, boolean isBlock) {
         this.name = name;
         this.isBlock = isBlock;
     }
@@ -30,50 +31,55 @@ public class StyleTag {
         return new StyleNode(this);
     }
 
-    protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+    public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
     }
 
-    public void update(StyleNode node) {
-    }
-
-    public static final TextStyleTag TAG_TEXT = new TextStyleTag("text");
-    public static final ElementStyleTag TAG_SPAN = new ElementStyleTag("span", false);
-    public static final ElementStyleTag TAG_P = new ElementStyleTag("p", true);
-    public static final ElementStyleTag TAG_DIV = new ElementStyleTag("div", true);
-    public static final ConstantStyleTag TAG_BR = new ConstantStyleTag("br", "\n");
-    public static final ConstantStyleTag TAG_HR = new ConstantStyleTag("hr", "\n");
-    public static final ElementStyleTag TAG_A = new ElementStyleTag("a", false);
-    public static final ElementStyleTag TAG_H1 = new ElementStyleTag("h1", false);
-    public static final ElementStyleTag TAG_H2 = new ElementStyleTag("h2", false);
-    public static final ElementStyleTag TAG_H3 = new ElementStyleTag("h3", false);
-    public static final ElementStyleTag TAG_H4 = new ElementStyleTag("h4", false);
-    public static final ElementStyleTag TAG_H5 = new ElementStyleTag("h5", false);
-    public static final ElementStyleTag TAG_H6 = new ElementStyleTag("h6", false);
-    public static final ElementStyleTag TAG_EM = new ElementStyleTag("em", false);
-    public static final ElementStyleTag TAG_STRONG = new ElementStyleTag("strong", false);
-    public static final ElementStyleTag TAG_SUP = new ElementStyleTag("sup", false);
-    public static final ElementStyleTag TAG_DEL = new ElementStyleTag("del", false);
-    public static final ElementStyleTag TAG_BLOCKQUOTE = new ElementStyleTag("blockquote", false);
-    public static final ElementStyleTag TAG_PRE = new ElementStyleTag("pre", false) {
+    public static final StyleTag TEXT = new StyleTag("text", false) {
             @Override
-            protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+            public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+                String v = styleNode.getAttribute(StyleAttribute.VALUE);
+                if (!JUtils.isEmpty(v)) {
+                    styleNode.setText(v);
+                }
+            }
+        };
+    public static final ElementStyleTag SPAN = new ElementStyleTag("span", false);
+    public static final ElementStyleTag P = new ElementStyleTag("p", true);
+    public static final ElementStyleTag DIV = new ElementStyleTag("div", true);
+    public static final ConstantStyleTag BR = new ConstantStyleTag("br", "\n");
+    public static final ConstantStyleTag HR = new ConstantStyleTag("hr", "\n");
+    public static final ElementStyleTag A = new ElementStyleTag("a", false);
+    public static final ElementStyleTag H1 = new ElementStyleTag("h1", false);
+    public static final ElementStyleTag H2 = new ElementStyleTag("h2", false);
+    public static final ElementStyleTag H3 = new ElementStyleTag("h3", false);
+    public static final ElementStyleTag H4 = new ElementStyleTag("h4", false);
+    public static final ElementStyleTag H5 = new ElementStyleTag("h5", false);
+    public static final ElementStyleTag H6 = new ElementStyleTag("h6", false);
+    public static final ElementStyleTag EM = new ElementStyleTag("em", false);
+    public static final ElementStyleTag STRONG = new ElementStyleTag("strong", false);
+    public static final ElementStyleTag SUP = new ElementStyleTag("sup", false);
+    public static final ElementStyleTag DEL = new ElementStyleTag("del", false);
+    public static final ElementStyleTag BLOCKQUOTE = new ElementStyleTag("blockquote", false);
+    public static final ElementStyleTag PRE = new ElementStyleTag("pre", false) {
+            @Override
+            public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
                 builder.pushDataMap();
-                builder.setData(TextStyleTag.PREFORMATTED_KEY, Boolean.TRUE);
+                builder.setData(InternalHtmlTextStyleTag.PREFORMATTED_KEY, Boolean.TRUE);
                 super.parse(node, styleNode, builder);
                 builder.popDataMap();
             }
         };
-    public static final ElementStyleTag TAG_CODE = new ElementStyleTag("code", false);
-    public static final ElementStyleTag TAG_TABLE = new ElementStyleTag("table", true);
-    public static final ElementStyleTag TAG_THEAD = new ElementStyleTag("thead", true);
-    public static final ElementStyleTag TAG_TBODY = new ElementStyleTag("tbody", true);
-    public static final ElementStyleTag TAG_TR = new ElementStyleTag("tr", true);
-    public static final ElementStyleTag TAG_TH = new ElementStyleTag("th", false);
-    public static final ElementStyleTag TAG_TD = new ElementStyleTag("td", false);
+    public static final ElementStyleTag CODE = new ElementStyleTag("code", false);
+    public static final ElementStyleTag TABLE = new ElementStyleTag("table", true);
+    public static final ElementStyleTag THEAD = new ElementStyleTag("thead", true);
+    public static final ElementStyleTag TBODY = new ElementStyleTag("tbody", true);
+    public static final ElementStyleTag TR = new ElementStyleTag("tr", true);
+    public static final ElementStyleTag TH = new ElementStyleTag("th", false);
+    public static final ElementStyleTag TD = new ElementStyleTag("td", false);
     private static final String LI_INDEX_KEY = "__li_index_key__";
-    public static final StyleTag TAG_OL = new ElementStyleTag("ol", true) {
+    public static final StyleTag OL = new ElementStyleTag("ol", true) {
             @Override
-            protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+            public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
                 Integer liIndex = (Integer)builder.getData(LI_INDEX_KEY);
                 builder.setData(LI_INDEX_KEY, new Integer(0));
                 super.parse(node, styleNode, builder);
@@ -81,18 +87,18 @@ public class StyleTag {
 
                 Integer indentValue = null;
                 try {
-                    indentValue = Integer.valueOf(styleNode.getAttribute(StyleAttribute.ATTRIBUTE_INDENT));
+                    indentValue = Integer.valueOf(styleNode.getAttribute(StyleAttribute.INDENT));
                 } catch (Throwable e) {
                     indentValue = null;
                 }
                 int indent = indentValue != null ? indentValue : 0;
                 indent += 16;
-                styleNode.setAttribute(StyleAttribute.ATTRIBUTE_INDENT, String.valueOf(indent));
+                styleNode.setAttribute(StyleAttribute.INDENT, String.valueOf(indent));
             }
         };
-    public static final StyleTag TAG_UL = new ElementStyleTag("ul", true) {
+    public static final StyleTag UL = new ElementStyleTag("ul", true) {
             @Override
-            protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+            public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
                 Integer liIndex = (Integer)builder.getData(LI_INDEX_KEY);
                 builder.setData(LI_INDEX_KEY, null);
                 super.parse(node, styleNode, builder);
@@ -100,16 +106,16 @@ public class StyleTag {
 
                 Integer indentValue = null;
                 try {
-                    indentValue = Integer.valueOf(styleNode.getAttribute(StyleAttribute.ATTRIBUTE_INDENT));
+                    indentValue = Integer.valueOf(styleNode.getAttribute(StyleAttribute.INDENT));
                 } catch (Throwable e) {
                     indentValue = null;
                 }
                 int indent = indentValue != null ? indentValue : 0;
                 indent += 16;
-                styleNode.setAttribute(StyleAttribute.ATTRIBUTE_INDENT, String.valueOf(indent));
+                styleNode.setAttribute(StyleAttribute.INDENT, String.valueOf(indent));
             }
         };
-    public static final StyleTag TAG_LI = new ElementStyleTag("li", true) {
+    public static final StyleTag LI = new ElementStyleTag("li", true) {
             @Override
             protected boolean buildOpenTag(Element element, StyleNode styleNode, StyleNodeBuilder builder) {
                 Integer index = (Integer)builder.getData(LI_INDEX_KEY);
@@ -117,7 +123,7 @@ public class StyleTag {
                     index += 1;
                     builder.setData(LI_INDEX_KEY, Integer.valueOf(index));
 
-                    TextStyleNode lnode = TAG_TEXT.createStyleNode();
+                    StyleNode lnode = TEXT.createStyleNode();
                     lnode.setText(String.format("%d. ", index));
                     lnode.setCancelNextBlockNewline(true);
                     styleNode.addChild(lnode);
@@ -125,41 +131,43 @@ public class StyleTag {
                 return true;
             }
         };
-    public static final StyleTag TAG_INTERNAL_COMMENT = new StyleTag("internal_comment", false);
-    public static final StyleTag TAG_INTERNAL_NEWLINE_FOR_BLOCK = new ConstantStyleTag("internal_newline_for_block", "\n");
+    public static final StyleTag INTERNAL_HTML_TEXT = new InternalHtmlTextStyleTag("internal_html_text");
+    public static final StyleTag INTERNAL_HTML_COMMENT = new StyleTag("internal_html_comment", false);
+    public static final StyleTag INTERNAL_NEWLINE_FOR_BLOCK = new ConstantStyleTag("internal_newline_for_block", "\n");
 
     private static StyleTag[] standardTags = new StyleTag[] {
-        TAG_TEXT,
-        TAG_SPAN,
-        TAG_P,
-        TAG_DIV,
-        TAG_BR,
-        TAG_HR,
-        TAG_A,
-        TAG_H1,
-        TAG_H2,
-        TAG_H3,
-        TAG_H4,
-        TAG_H5,
-        TAG_H6,
-        TAG_EM,
-        TAG_STRONG,
-        TAG_SUP,
-        TAG_DEL,
-        TAG_PRE,
-        TAG_CODE,
-        TAG_BLOCKQUOTE,
-        TAG_TABLE,
-        TAG_THEAD,
-        TAG_TBODY,
-        TAG_TR,
-        TAG_TH,
-        TAG_TD,
-        TAG_OL,
-        TAG_UL,
-        TAG_LI,
-        TAG_INTERNAL_COMMENT,
-        TAG_INTERNAL_NEWLINE_FOR_BLOCK,
+        TEXT,
+        SPAN,
+        P,
+        DIV,
+        BR,
+        HR,
+        A,
+        H1,
+        H2,
+        H3,
+        H4,
+        H5,
+        H6,
+        EM,
+        STRONG,
+        SUP,
+        DEL,
+        PRE,
+        CODE,
+        BLOCKQUOTE,
+        TABLE,
+        THEAD,
+        TBODY,
+        TR,
+        TH,
+        TD,
+        OL,
+        UL,
+        LI,
+        INTERNAL_HTML_TEXT,
+        INTERNAL_HTML_COMMENT,
+        INTERNAL_NEWLINE_FOR_BLOCK,
     };
 
     public static StyleTag[] getStandardTags() {

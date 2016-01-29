@@ -18,15 +18,13 @@ import net.yatomiya.e4.util.*;
 public class PerspectiveManager {
     private PartService service;
     private MPerspectiveStack persStack;
-    private String currentPerspectiveId;
 
     PerspectiveManager(PartService service) {
         this.service = service;
-        currentPerspectiveId = null;
 
         MApplication mapp = EModelUtils.getApplication();
-        MTrimmedWindow mwin = (MTrimmedWindow)EModelUtils.find(PartService.WINDOW_ID_MAIN, mapp);
-        persStack = (MPerspectiveStack)EModelUtils.find(PartService.PERSPECTIVE_STACK_ID, mwin);
+        MTrimmedWindow mwin = EModelUtils.find(mapp, MTrimmedWindow.class, PartService.WINDOW_ID_MAIN);
+        persStack = EModelUtils.find(mwin, MPerspectiveStack.class, PartService.PERSPECTIVE_STACK_ID);
     }
 
     public PartService getService() {
@@ -47,7 +45,7 @@ public class PerspectiveManager {
     }
 
     public MPerspective getPerspective(String id) {
-        return (MPerspective)EModelUtils.find(id, persStack);
+        return EModelUtils.find(persStack, MPerspective.class, id);
     }
 
     public MPerspective createPerspective(String id) {
@@ -82,22 +80,20 @@ public class PerspectiveManager {
     }
 
     public void switchPerspective(MPerspective pers) {
-        currentPerspectiveId = pers.getElementId();
-
         service.switchPerspective(pers);
     }
 
-    public void resetPerspective() {
-        resetPerspective(getActivePerspective(), currentPerspectiveId);
-    }
-
     // Creats new perspective and move all parts to new one. Current pers is removed.
-    MPerspective resetPerspective(MPerspective pers, String snippetPerspectiveId) {
+    public void resetPerspective() {
+        MPerspective pers = getActivePerspective();
+        if (pers == null)
+            return;
+
         List<MPart> partList = EModelUtils.findElements(pers, MPart.class);
 
         List<MWindow> oldWindows = new ArrayList<>(pers.getWindows());
 
-        MPerspective newPers = (MPerspective)EModelUtils.cloneSnippet(snippetPerspectiveId);
+        MPerspective newPers = (MPerspective)EModelUtils.cloneSnippet(pers.getElementId());
         persStack.getChildren().add(newPers);
 
         EModelService modelService = EModelUtils.getService();
@@ -109,8 +105,6 @@ public class PerspectiveManager {
         switchPerspective(newPers);
 
         persStack.getChildren().remove(pers);
-
-        return newPers;
     }
 
     public static MElementContainer findPreferredPartContainer(MPerspective pers, MPart part) {
@@ -129,7 +123,7 @@ public class PerspectiveManager {
         List<MElementContainer> containerList = EModelUtils.findElements(pers, MElementContainer.class);
         for (MElementContainer c : containerList) {
             String containerType = c.getPersistedState().get(PartService.PART_CONTAINER_TYPE);
-            if (JUtils.isNotEmpty(containerType)
+            if (!JUtils.isEmpty(containerType)
                 && type.equals(containerType))
                 return c;
         }

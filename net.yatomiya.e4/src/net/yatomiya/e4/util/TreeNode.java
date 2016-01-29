@@ -52,12 +52,20 @@ public interface TreeNode<T extends TreeNode<T>> {
         return node.isAncestorOf((T)this);
     }
 
-    default boolean visit(Predicate<T> visitor) {
+    default List<T> listTree() {
+        return findTreeAll(n -> true);
+    }
+
+    default List<T> listAcnestor() {
+        return findAncestorAll(n -> true);
+    }
+
+    default boolean visitTree(Predicate<T> visitor) {
         boolean result;
         result = visitor.test((T)this);
         if (result) {
             for (T child : getChildren()) {
-                result = child.visit(visitor);
+                result = child.visitTree(visitor);
                 if (!result)
                     break;
             }
@@ -77,62 +85,93 @@ public interface TreeNode<T extends TreeNode<T>> {
         return result;
     }
 
-    default List<T> findAll(Predicate<T> selector) {
+    default boolean visitUpstream(Predicate<T> visitor) {
+        boolean result = true;
+
+        result = visitor.test((T)this);
+
+        if (result && getParent() != null) {
+            int currentIndex = getParent().getChildren().indexOf(this);
+            if (currentIndex == 0) {
+                return getParent().visitUpstream(visitor);
+            } else {
+                return getParent().getChildren().get(currentIndex - 1).visitUpstream(visitor);
+            }
+        }
+        return result;
+    }
+
+    default boolean visitUpward(Predicate<T> visitor) {
+        boolean result = true;
+
+        result = visitor.test((T)this);
+
+        if (result && getParent() != null) {
+            int currentIndex = getParent().getChildren().indexOf(this);
+            if (currentIndex == 0) {
+                return getParent().visitUpstream(visitor);
+            } else {
+                T node = getParent().getChildren().get(currentIndex - 1);
+                while (node.getChildren().size() > 0) {
+                    node = node.getChildren().get(node.getChildren().size() - 1);
+                }
+                return node.visitUpstream(visitor);
+            }
+        }
+        return result;
+    }
+
+    default List<T> findAll(Function<Predicate<T>, Boolean> visitorFunc, Predicate<T> selector) {
         List<T> foundList = new ArrayList<>();
-        visit(n -> {
-            if (selector.test(n))
-                foundList.add(n);
-            return true;
+        visitorFunc.apply(n -> {
+                if (selector.test(n))
+                    foundList.add(n);
+                return true;
         });
         return foundList;
     }
 
-    default T find(Predicate<T> selector) {
-        List<T> foundList = new ArrayList<>();
-        visit(n -> {
-            if (selector.test(n)) {
-                foundList.add(n);
-                return false;
-            }
-            return true;
+    default T find(Function<Predicate<T>, Boolean> visitorFunc, Predicate<T> selector) {
+        Object[] found = new Object[1];
+        visitorFunc.apply(n -> {
+                if (selector.test(n)) {
+                    found[0] = n;
+                    return false;
+                }
+                return true;
         });
-        if (foundList.size() > 0)
-            return foundList.get(0);
-        else
-            return null;
+        return (T)found[0];
+    }
+
+    default List<T> findTreeAll(Predicate<T> selector) {
+        return findAll(this::visitTree, selector);
+    }
+
+    default T findTree(Predicate<T> selector) {
+        return find(this::visitTree, selector);
     }
 
     default List<T> findAncestorAll(Predicate<T> selector) {
-        List<T> foundList = new ArrayList<>();
-        visitAncestor(n -> {
-            if (selector.test(n))
-                foundList.add(n);
-            return true;
-        });
-        return foundList;
+        return findAll(this::visitAncestor, selector);
     }
 
     default T findAncestor(Predicate<T> selector) {
-        List<T> foundList = new ArrayList<>();
-        visitAncestor(n -> {
-            if (selector.test(n)) {
-                foundList.add(n);
-                return false;
-            }
-            return true;
-        });
-        if (foundList.size() > 0)
-            return foundList.get(0);
-        else
-            return null;
+        return find(this::visitAncestor, selector);
     }
 
-    default List<T> listTree() {
-        return findAll(n -> true);
+    default List<T> findUpstreamAll(Predicate<T> selector) {
+        return findAll(this::visitUpstream, selector);
     }
 
-    default List<T> listAcnestor() {
-        return findAncestorAll(n -> true);
+    default T findUpstream(Predicate<T> selector) {
+        return find(this::visitUpstream, selector);
     }
 
+    default List<T> findUpwardAll(Predicate<T> selector) {
+        return findAll(this::visitUpward, selector);
+    }
+
+    default T findUpward(Predicate<T> selector) {
+        return find(this::visitUpward, selector);
+    }
 }

@@ -16,6 +16,16 @@ public class StyleNodeBuilder {
     private TemplateManager templateManager;
     private Map<String, StyleTag> tagRegistry;
     private Map<String, StyleAttribute> attrRegistry;
+
+    /**
+     * なぜ StyleNode.getData() を使わないのか
+     * StyleNode.getData() で上位ノードのデータを使う場合、上位の StyleNode に add されていなければならない。
+     * しかし、StyleNode をつなげた状態で add していくと、 add したときに StyleNode 全体を走査する処理が
+     * 走ってしまう場合があり（ブロック整形 formatBlock())、パフォーマンス的に好ましくない。
+     * なので、build() で生成するノードを全て作成した後に、ノードを親ノードに取り付ける順番を取っている。
+     * しかしそうすると、取り付けるまでは親ノードより上位の getData() を参照することができない。
+     * なので、ビルダー内部にコンテキストデータ用の仕組みを準備する。
+     */
     private Map<Object, Object> dataMap;
     private Deque<Map<Object, Object>> dataStack;
 
@@ -60,9 +70,9 @@ public class StyleNodeBuilder {
         if (node instanceof Element)
             name = ((Element)node).tagName();
         else if (node instanceof TextNode)
-            name = StyleTag.TAG_TEXT.getName();
+            name = StyleTag.INTERNAL_HTML_TEXT.getName();
         else if (node instanceof Comment)
-            name = StyleTag.TAG_INTERNAL_COMMENT.getName();
+            name = StyleTag.INTERNAL_HTML_COMMENT.getName();
 
         return getStyleTag(name);
     }
@@ -73,13 +83,12 @@ public class StyleNodeBuilder {
 
     public StyleAttribute getStyleAttribute(String name) {
         StyleAttribute attr = attrRegistry.get(name);
-/*
-           // For now, unregistered attribute in HTML node template is not set to StyleNode.
+
         if (attr == null) {
             attr = new StyleAttribute(name, false, false);
             attrRegistry.put(name, attr);
         }
-*/
+
         return attr;
     }
 
@@ -113,10 +122,10 @@ public class StyleNodeBuilder {
     public StyleNode build(Node node) {
         StyleTag tag = getStyleTag(node);
         StyleNode styleNode = tag.createStyleNode();
-        tag.parse(node, styleNode, this);
         if (node instanceof Element) {
-            parseAttributeAll((Element)node, styleNode);
+            parseAttributeAll(styleNode, (Element)node);
         }
+        tag.parse(node, styleNode, this);
         return styleNode;
     }
 
@@ -124,28 +133,31 @@ public class StyleNodeBuilder {
         List<StyleNode> list = new ArrayList<>();
         for (Node node : nodes) {
             StyleNode styleNode = build(node);
-            if (styleNode.getTag() == StyleTag.TAG_TEXT
-                && JUtils.isEmpty(((TextStyleNode)styleNode).getText())) {
-            } else {
-                list.add(styleNode);
-            }
+            list.add(styleNode);
         }
         return list;
     }
 
-    public void parseAttributeAll(Element node, StyleNode styleNode) {
-        Attributes attrList = null;
-        Attributes styleTemplate = getTemplateManager().getStyleTemplate(node.tagName());
-        if (styleTemplate == null) {
-            attrList = node.attributes();
-        } else {
-            attrList = node.attributes();
-            attrList.addAll(styleTemplate);
+    public StyleNode build(StyleTag tag) {
+        StyleNode styleNode = tag.createStyleNode();
+        parseAttributeAll(styleNode, null);
+        return styleNode;
+    }
+
+    public void parseAttributeAll(StyleNode styleNode, Element node) {
+        Attributes attrs = new Attributes();
+        if (node != null) {
+            attrs.addAll(node.attributes());
         }
 
-        for (Attribute attr : attrList) {
+        Attributes styleTemplate = getTemplateManager().getAttributeTemplate(styleNode.getTag().getName());
+        if (styleTemplate != null) {
+            attrs.addAll(styleTemplate);
+        }
+
+        for (Attribute attr : attrs) {
             String name = attr.getKey();
-            if (JUtils.isNotEmpty(name) && JUtils.isNotEmpty(attr.getValue())) {
+            if (!JUtils.isEmpty(name) && !JUtils.isEmpty(attr.getValue())) {
                 StyleAttribute sa = getStyleAttribute(name);
                 if (sa != null) {
                     styleNode.setAttribute(sa, attr.getValue());
@@ -154,11 +166,11 @@ public class StyleNodeBuilder {
         }
     }
 
-    private static final String RIENTRANT_PREFIX = StyleNodeBuilder.class.getName() + ":rientrant_prefix";
+    private static final String REENTRANT_PREFIX = StyleNodeBuilder.class.getName() + ":reentrant_prefix";
 
     public StyleNode buildTemplate(String templateId) {
-        String rientrant_key = RIENTRANT_PREFIX + templateId;
-        if (getData(rientrant_key) != null)
+        String reentrant_key = REENTRANT_PREFIX + templateId;
+        if (getData(reentrant_key) != null)
             return null;
 
         StyleNode styleNode;
@@ -166,12 +178,12 @@ public class StyleNodeBuilder {
 
         pushDataMap();
         {
-            setData(rientrant_key, Boolean.TRUE);
+            setData(reentrant_key, Boolean.TRUE);
 
             if (template != null) {
                 styleNode = build(template);
             } else {
-                TextStyleNode node = StyleTag.TAG_TEXT.createStyleNode();
+                StyleNode node = StyleTag.TEXT.createStyleNode();
                 node.setText(String.format("Template [%s] is not found.", templateId));
                 styleNode = node;
             }

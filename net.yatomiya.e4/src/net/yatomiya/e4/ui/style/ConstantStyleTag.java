@@ -16,8 +16,8 @@ class ConstantStyleTag extends StyleTag {
     }
 
     @Override
-    public TextStyleNode createStyleNode() {
-        return new TextStyleNode(this, value);
+    public StyleNode createStyleNode() {
+        return new StyleNode(this, value);
     }
 }
 

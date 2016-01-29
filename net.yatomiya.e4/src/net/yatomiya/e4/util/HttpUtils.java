@@ -118,11 +118,10 @@ public class HttpUtils {
         return createRequestBuilder(url, lastModifiedSince).build();
     }
 
-    public static String getPathExtension(HttpUrl url) {
+    public static String getPathName(HttpUrl url) {
         List<String> segments = url.pathSegments();
         if (segments.size() >= 1) {
-            String name = segments.get(segments.size() - 1);
-            return StringUtils.getExtension(name);
+            return segments.get(segments.size() - 1);
         }
         return "";
     }

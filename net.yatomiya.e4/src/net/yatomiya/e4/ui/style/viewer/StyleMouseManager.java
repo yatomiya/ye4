@@ -114,6 +114,10 @@ public class StyleMouseManager {
         hoverDelayTime = v;
     }
 
+    public boolean isSelectionDragging() {
+        return iListener.isSelectionDragging();
+    }
+
     class InternalListener implements MouseListener, MouseMoveListener, MouseTrackListener, FocusListener, MenuDetectListener, ITextListener {
         StyleNode currentNodeOnCursor;
         class ClickState {
@@ -134,13 +138,17 @@ public class StyleMouseManager {
 
         void clearState() {
             if (currentNodeOnCursor != null) {
-                if (!UIUtils.isDisposed(viewer.getTextWidget()))
-                    onExit(viewer, currentNodeOnCursor);
+                onExit(viewer, currentNodeOnCursor);
             }
 
             currentNodeOnCursor = null;
             clickState = null;
             cancelDelayedHoverChecker();
+        }
+
+        boolean isSelectionDragging() {
+            return clickState != null
+                && clickState.button == 1;
         }
 
         @Override
@@ -149,17 +157,26 @@ public class StyleMouseManager {
 
         @Override
         public void focusLost(FocusEvent e) {
+            if (isSelectionDragging())
+                return;
+
             clearState();
         }
 
         @Override
         public void mouseEnter(MouseEvent e) {
+            if (isSelectionDragging())
+                return;
+
             clearState();
             mouseMove(e);
         }
 
         @Override
         public void mouseExit(MouseEvent e) {
+            if (isSelectionDragging())
+                return;
+
             clearState();
         }
 
@@ -171,16 +188,12 @@ public class StyleMouseManager {
         @Override
         public void mouseMove(MouseEvent e) {
             StyledText st = viewer.getTextWidget();
-            if (UIUtils.isDisposed(st))
+
+            if (isSelectionDragging())
                 return;
 
             if (st.getDisplay().getActiveShell() != st.getShell()) {
                 clearState();
-                return;
-            }
-
-            // Dragging for text selection.
-            if (clickState != null && clickState.button == 1 && st.isTextSelected()) {
                 return;
             }
 
@@ -189,7 +202,7 @@ public class StyleMouseManager {
             int offset = UIUtils.getOffsetForCursorLocation(viewer.getTextWidget());
             if (offset >= 0) {
                 if (viewer.getDocument() != null)
-                    node = viewer.getDocument().getTextStyleNode(offset);
+                    node = viewer.getDocument().getStyleNode(offset);
             }
 
             // When entering node
@@ -222,7 +235,7 @@ public class StyleMouseManager {
 
         @Override
         public void mouseDown(MouseEvent e) {
-            if (clickState == null && currentNodeOnCursor != null) {
+            if (clickState == null) {
                 clickState = new ClickState();
                 clickState.button = e.button;
                 clickState.loc = new Point(e.x, e.y);
@@ -233,11 +246,11 @@ public class StyleMouseManager {
         @Override
         public void mouseUp(MouseEvent e) {
             if (clickState != null
+                && clickState.button == 1
                 && clickState.button == e.button
-                && clickState.button == 1) {
-                if (clickState.node == currentNodeOnCursor) {
-                    onClick(viewer, clickState.node, e);
-                }
+                && clickState.loc.equals(new Point(e.x, e.y))
+                && clickState.node != null) {
+                onClick(viewer, clickState.node, e);
             }
             clickState = null;
         }

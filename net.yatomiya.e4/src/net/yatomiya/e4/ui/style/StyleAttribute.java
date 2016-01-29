@@ -42,7 +42,7 @@ public class StyleAttribute {
         return value;
     }
 
-    public Object applyCascadeValue(Object value, Object cascadedValue) {
+    public Object evaluateContextValue(Object value, Object contextValue) {
         return value;
     }
 
@@ -54,13 +54,14 @@ public class StyleAttribute {
         return false;
     }
 
-    public static final StyleAttribute ATTRIBUTE_ID = new StyleAttribute("id", false, false);
-    public static final StyleAttribute ATTRIBUTE_INDENT = new IntegerStyleAttribute("indent", true, true) {
+    public static final StyleAttribute ID = new StyleAttribute("id", false, false);
+    public static final StyleAttribute VALUE = new StyleAttribute("value", false, false);
+    public static final StyleAttribute INDENT = new IntegerStyleAttribute("indent", true, true) {
             @Override
-            public Object applyCascadeValue(Object value, Object cascadedValue) {
+            public Object evaluateContextValue(Object value, Object contextValue) {
                 int parentIndent = 0;
-                if (cascadedValue != null)
-                    parentIndent = (Integer)cascadedValue;
+                if (contextValue != null)
+                    parentIndent = (Integer)contextValue;
                 int newIndent = parentIndent + (Integer)value;
                 return newIndent;
             }
@@ -71,28 +72,28 @@ public class StyleAttribute {
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_COLOR = new ColorStyleAttribute("color", true, true) {
+    public static final StyleAttribute COLOR = new ColorStyleAttribute("color", true, true) {
             @Override
             public boolean applyStyleRange(StyleRange range, Object attrValue, StyleNode node, StyleViewer viewer) {
                 range.foreground = viewer.getResourceManager().getColor((RGB)attrValue);
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_BACKGROUND_COLOR = new ColorStyleAttribute("background_color", true, true) {
+    public static final StyleAttribute BACKGROUND_COLOR = new ColorStyleAttribute("background_color", true, true) {
             @Override
             public boolean applyStyleRange(StyleRange range, Object attrValue, StyleNode node, StyleViewer viewer) {
                 range.background = viewer.getResourceManager().getColor((RGB)attrValue);
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_FONT = new StyleAttribute("font", true, true) {
+    public static final StyleAttribute FONT = new StyleAttribute("font", true, true) {
             @Override
             public boolean applyStyleRange(StyleRange range, Object attrValue, StyleNode node, StyleViewer viewer) {
                 applyFontStyleRange(range, this, attrValue, node, viewer);
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_FONT_SIZE = new StyleAttribute("font_size", true, true) {
+    public static final StyleAttribute FONT_SIZE = new StyleAttribute("font_size", true, true) {
             @Override
             public Object parseValue(String value) {
                 String str = value;
@@ -117,9 +118,9 @@ public class StyleAttribute {
             }
 
             @Override
-            public Object applyCascadeValue(Object value, Object cascadedValue) {
-                boolean parentFixed = (Boolean)((Object[])cascadedValue)[0];
-                int parentSize = (Integer)((Object[])cascadedValue)[1];
+            public Object evaluateContextValue(Object value, Object contextValue) {
+                boolean parentFixed = (Boolean)((Object[])contextValue)[0];
+                int parentSize = (Integer)((Object[])contextValue)[1];
                 boolean fixed = (Boolean)((Object[])value)[0];
                 int size = (Integer)((Object[])value)[1];
                 if (!fixed) {
@@ -139,7 +140,7 @@ public class StyleAttribute {
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_FONT_STYLE = new StyleAttribute("font_style", true, true) {
+    public static final StyleAttribute FONT_STYLE = new StyleAttribute("font_style", true, true) {
             @Override
             public Object parseValue(String value) {
                 Object attrValue = null;
@@ -156,7 +157,7 @@ public class StyleAttribute {
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_FONT_WEIGHT = new StyleAttribute("font_weight", true, true) {
+    public static final StyleAttribute FONT_WEIGHT = new StyleAttribute("font_weight", true, true) {
             @Override
             public Object parseValue(String value) {
                 Object attrValue = null;
@@ -173,49 +174,51 @@ public class StyleAttribute {
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_STRIKEOUT = new BooleanStyleAttribute("strikeout", true, true) {
+    public static final StyleAttribute STRIKEOUT = new BooleanStyleAttribute("strikeout", true, true) {
             @Override
             public boolean applyStyleRange(StyleRange range, Object attrValue, StyleNode node, StyleViewer viewer) {
                 range.strikeout = (Boolean)attrValue;
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_UNDERLINE = new BooleanStyleAttribute("underline", true, true) {
+    public static final StyleAttribute UNDERLINE = new BooleanStyleAttribute("underline", true, true) {
             @Override
             public boolean applyStyleRange(StyleRange range, Object attrValue, StyleNode node, StyleViewer viewer) {
                 range.underline = (Boolean)attrValue;
                 return true;
             }
         };
-    public static final StyleAttribute ATTRIBUTE_METRICS = new MetricsStyleAttribute("metrics", true, true);
-    public static final StyleAttribute ATTRIBUTE_ONENTER = new StyleAttribute("onenter", false, false);
-    public static final StyleAttribute ATTRIBUTE_ONEXIT = new StyleAttribute("onexit", false, false);
-    public static final StyleAttribute ATTRIBUTE_ONMOVE = new StyleAttribute("onmove", false, false);
-    public static final StyleAttribute ATTRIBUTE_ONCLICK = new StyleAttribute("onclick", false, false);
-    public static final StyleAttribute ATTRIBUTE_ONHOVER = new StyleAttribute("onhover", false, false);
-    public static final StyleAttribute ATTRIBUTE_CURSOR = new StyleAttribute("cursor", true, false);
-
-    public static final StyleAttribute ATTRIBUTE_HREF = new StyleAttribute("href", true, false);
+    public static final StyleAttribute METRICS = new MetricsStyleAttribute("metrics", true, true);
+    public static final StyleAttribute ONUPDATE = new StyleAttribute("onupdate", false, false);
+    public static final StyleAttribute ONENTER = new StyleAttribute("onenter", false, false);
+    public static final StyleAttribute ONEXIT = new StyleAttribute("onexit", false, false);
+    public static final StyleAttribute ONMOVE = new StyleAttribute("onmove", false, false);
+    public static final StyleAttribute ONCLICK = new StyleAttribute("onclick", false, false);
+    public static final StyleAttribute ONHOVER = new StyleAttribute("onhover", false, false);
+    public static final StyleAttribute CURSOR = new StyleAttribute("cursor", true, false);
+    public static final StyleAttribute HREF = new StyleAttribute("href", true, false);
 
     private static StyleAttribute[] standardAttributes = new StyleAttribute[] {
-        ATTRIBUTE_ID,
-        ATTRIBUTE_INDENT,
-        ATTRIBUTE_COLOR,
-        ATTRIBUTE_BACKGROUND_COLOR,
-        ATTRIBUTE_FONT,
-        ATTRIBUTE_FONT_SIZE,
-        ATTRIBUTE_FONT_STYLE,
-        ATTRIBUTE_FONT_WEIGHT,
-        ATTRIBUTE_STRIKEOUT,
-        ATTRIBUTE_UNDERLINE,
-        ATTRIBUTE_METRICS,
-        ATTRIBUTE_ONENTER,
-        ATTRIBUTE_ONEXIT,
-        ATTRIBUTE_ONMOVE,
-        ATTRIBUTE_ONCLICK,
-        ATTRIBUTE_ONHOVER,
-        ATTRIBUTE_CURSOR,
-        ATTRIBUTE_HREF,
+        ID,
+        VALUE,
+        INDENT,
+        COLOR,
+        BACKGROUND_COLOR,
+        FONT,
+        FONT_SIZE,
+        FONT_STYLE,
+        FONT_WEIGHT,
+        STRIKEOUT,
+        UNDERLINE,
+        METRICS,
+        ONUPDATE,
+        ONENTER,
+        ONEXIT,
+        ONMOVE,
+        ONCLICK,
+        ONHOVER,
+        CURSOR,
+        HREF,
     };
 
     public static StyleAttribute[] getStandardAttributes() {
@@ -235,7 +238,7 @@ public class StyleAttribute {
         String fontName = currentData.getName();
         int fontSize = currentData.getHeight();
         int fontStyle = currentData.getStyle();
-        if (attr == ATTRIBUTE_FONT) {
+        if (attr == FONT) {
             fontName = (String)attrValue;
 
             if (fontName.equals("propotional")) {
@@ -243,7 +246,7 @@ public class StyleAttribute {
             } else if (fontName.equals("monospace")) {
                 fontName = viewer.getMonospaceFont().getFontData()[0].getName();
             }
-        } else if (attr == ATTRIBUTE_FONT_SIZE) {
+        } else if (attr == FONT_SIZE) {
             Object[] data = (Object[])attrValue;
             boolean fixed = (Boolean)data[0];
             int size = (Integer)data[1];
@@ -252,12 +255,12 @@ public class StyleAttribute {
             } else {
                 fontSize += size;
             }
-        } else if (attr == ATTRIBUTE_FONT_STYLE) {
+        } else if (attr == FONT_STYLE) {
             if ((Boolean)attrValue)
                 fontStyle |= SWT.ITALIC;
             else
                 fontStyle &= ~SWT.ITALIC;
-        } else if (attr == ATTRIBUTE_FONT_WEIGHT) {
+        } else if (attr == FONT_WEIGHT) {
             if ((Boolean)attrValue)
                 fontStyle |= SWT.BOLD;
             else
@@ -305,7 +308,7 @@ public class StyleAttribute {
 
         @Override
         public Object parseValue(String value) {
-            int[] nums = HtmlUtils.hexToRgb(value);
+            int[] nums = HtmlUtils.parseColor(value);
             return new RGB(nums[0], nums[1], nums[2]);
         }
     }

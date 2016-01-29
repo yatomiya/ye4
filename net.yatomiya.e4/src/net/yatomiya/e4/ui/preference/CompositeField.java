@@ -94,13 +94,13 @@ public class CompositeField extends FieldEditor {
     protected void adjustForNumColumns(int numColumns) {
         GridData gd = (GridData)control.getLayoutData();
         gd.horizontalSpan = numColumns;
-        if (JUtils.isNotEmpty(getLabelText()))
+        if (!JUtils.isEmpty(getLabelText()))
             gd.horizontalSpan -= 1;
     }
 
     @Override
     public int getNumberOfControls() {
-        if (JUtils.isNotEmpty(getLabelText()))
+        if (!JUtils.isEmpty(getLabelText()))
             return 2;
         else
             return 1;
@@ -108,14 +108,14 @@ public class CompositeField extends FieldEditor {
 
     @Override
     protected void doFillIntoGrid(Composite parent, int numColumns) {
-        if (JUtils.isNotEmpty(getLabelText())) {
+        if (!JUtils.isEmpty(getLabelText())) {
             getLabelControl(parent);
         }
 
         control = createCompositeControl(parent, style);
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.horizontalSpan = numColumns;
-        if (JUtils.isNotEmpty(getLabelText()))
+        if (!JUtils.isEmpty(getLabelText()))
             gd.horizontalSpan -= 1;
         control.setLayoutData(gd);
 

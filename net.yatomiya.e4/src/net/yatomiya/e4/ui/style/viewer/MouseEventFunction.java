@@ -12,7 +12,7 @@ package net.yatomiya.e4.ui.style.viewer;
 import org.eclipse.swt.events.*;
 import net.yatomiya.e4.ui.style.*;
 
-public interface EventFunction {
+public interface MouseEventFunction {
     void execute(StyleViewer viewer, StyleNode node, StyleAttribute attr, MouseEvent event);
 }
 

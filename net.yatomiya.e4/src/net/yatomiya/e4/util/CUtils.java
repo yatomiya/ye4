@@ -37,6 +37,12 @@ public class CUtils {
         return list;
     }
 
+    public static <T> T getFirst(List<T> c) {
+        if (c == null || c.size() == 0)
+            return null;
+        return c.get(0);
+    }
+
     public static boolean isAllSameClass(Object[] array, Class targetClass) {
         return isAllSameClass(Arrays.asList(array), targetClass);
     }

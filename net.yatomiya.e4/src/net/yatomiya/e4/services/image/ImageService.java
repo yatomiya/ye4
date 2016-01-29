@@ -14,9 +14,8 @@ import org.eclipse.e4.core.contexts.*;
 import org.eclipse.swt.graphics.*;
 import com.squareup.okhttp.*;
 import net.yatomiya.e4.*;
-import net.yatomiya.e4.util.*;
 import net.yatomiya.e4.ui.image.*;
-import net.yatomiya.e4.ui.util.*;
+import net.yatomiya.e4.util.*;
 
 public class ImageService {
     public static final String ROOT_PATH = "image";

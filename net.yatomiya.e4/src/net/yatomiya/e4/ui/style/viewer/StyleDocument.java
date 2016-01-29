@@ -16,7 +16,7 @@ public class StyleDocument extends Document implements IDocumentListener {
     private StyleNode rootNode;
     private StyleViewer viewer;
 
-    private List<TextStyleNode> textNodeList;
+    private List<StyleNode> textNodeList;
 
     public StyleDocument() {
         super();
@@ -25,7 +25,7 @@ public class StyleDocument extends Document implements IDocumentListener {
 
         addDocumentListener(this);
 
-        rootNode = StyleTag.TAG_SPAN.createStyleNode();
+        rootNode = StyleTag.SPAN.createStyleNode();
         rootNode.setData(StyleDocument.class, this);
     }
 
@@ -67,11 +67,8 @@ public class StyleDocument extends Document implements IDocumentListener {
         textNodeList.clear();
         if (rootNode != null) {
             rootNode.visitNodeTree(node -> {
-                    if (node instanceof TextStyleNode) {
-                        TextStyleNode tnode = (TextStyleNode)node;
-                        if (JUtils.isNotEmpty(tnode.getText())) {
-                            textNodeList.add(tnode);
-                        }
+                    if (!JUtils.isEmpty(node.getText())) {
+                        textNodeList.add(node);
                     }
                     return true;
                 });
@@ -87,11 +84,11 @@ public class StyleDocument extends Document implements IDocumentListener {
     public void documentChanged(DocumentEvent event) {
     }
 
-    public TextStyleNode getTextStyleNode(int offset) {
+    public StyleNode getStyleNode(int offset) {
         return RegionUtils.find(textNodeList, offset);
     }
 
-    public List<TextStyleNode> getTextStyleNodes(int offset, int length) {
+    public List<StyleNode> getStyleNodes(int offset, int length) {
         return RegionUtils.find(textNodeList, offset, length);
     }
 

@@ -17,7 +17,6 @@ import org.eclipse.swt.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.widgets.*;
-import net.yatomiya.e4.ui.util.*;
 import net.yatomiya.e4.util.*;
 
 public class TableViewerColumnManager {

@@ -12,7 +12,6 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
-import net.yatomiya.e4.ui.util.*;
 import net.yatomiya.e4.ui.viewer.*;
 
 public abstract class StructuredViewerDialog<T extends StructuredViewer> extends Dialog {

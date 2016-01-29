@@ -17,11 +17,11 @@ public class DynamicMenuContribution {
         return EModelUtils.createElement(MDirectMenuItem.class);
     }
 
-    public static List<MMenuElement> createPartContextMenu(
-        MPart part,
+    public static List<MMenuElement> createContextMenu(
+        List<MMenu> menuList,
         String holderMenuId,
         String contextMenuId) {
-        MMenu holderMenu = CUtils.findFirst(part.getMenus(), e -> e.getElementId().equals(holderMenuId));
+        MMenu holderMenu = CUtils.findFirst(menuList, e -> e.getElementId().equals(holderMenuId));
         if (holderMenu == null)
             return Collections.EMPTY_LIST;
         MMenu contextMenu = (MMenu)CUtils.findFirst(holderMenu.getChildren(), e -> e.getElementId().equals(contextMenuId));
@@ -31,16 +31,27 @@ public class DynamicMenuContribution {
         return CUtils.map(contextMenu.getChildren(), e -> EModelUtils.cloneElement(e));
     }
 
-    public static void addContextMenuBlock(
+    public static List<MMenuElement> addContextMenuBlock(
         List<MMenuElement> list,
-        MPart part,
+        List<MMenu> menuList,
         String holderMenuId,
         String contextMenuId) {
         if (list.size() > 0) {
             list.add(EModelUtils.createElement(MMenuSeparator.class));
         }
 
-        list.addAll(createPartContextMenu(part, holderMenuId, contextMenuId));
+        List<MMenuElement> elements = createContextMenu(menuList, holderMenuId, contextMenuId);
+        list.addAll(elements);
+
+        return elements;
+    }
+
+    public static List<MMenuElement> addContextMenuBlock(
+        List<MMenuElement> list,
+        MPart part,
+        String holderMenuId,
+        String contextMenuId) {
+        return addContextMenuBlock(list, part.getMenus(), holderMenuId, contextMenuId);
     }
 }
 

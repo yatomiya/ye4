@@ -27,8 +27,6 @@ import net.yatomiya.e4.ui.viewer.*;
 import net.yatomiya.e4.util.*;
 
 public class StyleViewer extends ProjectionViewer {
-    public static final String EVENT_FUNC_OPEN_URL = "open_url";
-
     private UIResourceManager resMgr;
     private Font propotionalFont;
     private Font monospaceFont;
@@ -41,7 +39,6 @@ public class StyleViewer extends ProjectionViewer {
     private AnnotationPainterManager annotationPainterManager;
     private StyleMouseManager mouseManager;
     private PopupWindowManager popupManager;
-    private Map<String, EventFunction> funcMap;
 
     public StyleViewer(Composite parent) {
         // WRAP を指定すると H_SCROLL は表示されない。
@@ -167,11 +164,6 @@ public class StyleViewer extends ProjectionViewer {
 
         popupManager = new PopupWindowManager(this);
 
-        funcMap = new HashMap<>();
-        mouseManager.addListener(new FunctionExecutor());
-
-        addEventFunction(EVENT_FUNC_OPEN_URL, (viewer, node, attr, event) -> openUrl(node));
-
         projSupport = new ProjectionSupport(this, new AnnotationAccess(), resMgr);
         projSupport.install();
     }
@@ -285,14 +277,6 @@ public class StyleViewer extends ProjectionViewer {
         return mouseManager;
     }
 
-    public void addEventFunction(String name, EventFunction func) {
-        funcMap.put(name, func);
-    }
-
-    public EventFunction getEventFunction(String name) {
-        return funcMap.get(name);
-    }
-
     public void runWithNoRedraw(Runnable runner) {
         // redraw(false) の状態で Document にテキストを追加したときに、選択範囲が 0-0 だと
         // 選択範囲内に追加されたと判定されて、選択範囲が 0-テキストの長さ にセットされてしまう。
@@ -353,11 +337,11 @@ public class StyleViewer extends ProjectionViewer {
         st.setTopPixel(st.getTopPixel() + bounds.height);
     }
 
-    public TextStyleNode getTextStyleNode(int offset) {
-        return getDocument() != null ? getDocument().getTextStyleNode(offset) : null;
+    public StyleNode getStyleNode(int offset) {
+        return getDocument() != null ? getDocument().getStyleNode(offset) : null;
     }
 
-    public TextStyleNode getTextStyleNodeForDisplay(Point displayLocation) {
+    public StyleNode getStyleNodeForDisplay(Point displayLocation) {
         int widgetOffset = UIUtils.getOffsetForDisplayLocation(getTextWidget(), displayLocation);
 
         int offset = -1;
@@ -368,25 +352,18 @@ public class StyleViewer extends ProjectionViewer {
             offset = widgetOffset + getVisibleRegion().getOffset();
         }
 
-        return getTextStyleNode(offset);
+        return getStyleNode(offset);
     }
 
-    public TextStyleNode getTextStyleNodeForCursorLocation() {
-        return getTextStyleNode(UIUtils.getOffsetForCursorLocation(getTextWidget()));
+    public StyleNode getStyleNodeForCursorLocation() {
+        return getStyleNode(UIUtils.getOffsetForCursorLocation(getTextWidget()));
     }
 
     protected void openUrl(StyleNode node) {
         String urlStr = null;
 
-        String href = (String)node.getCascadedAttribute(StyleAttribute.ATTRIBUTE_HREF);
-        if (JUtils.isNotEmpty(href)) {
-            urlStr = href;
-        } else {
-            String nodeText = node.buildText();
-            if (JUtils.isNotEmpty(nodeText)) {
-                urlStr = nodeText;
-            }
-        }
+        String href = (String)node.getContextAttribute(StyleAttribute.HREF);
+        urlStr = href;
         if (urlStr == null)
             return;
 
@@ -429,14 +406,14 @@ public class StyleViewer extends ProjectionViewer {
     }
 
     public static class StyleNodeVisibleEvent {
-        List<TextStyleNode> shownNodes;
-        List<TextStyleNode> hiddenNodes;
+        List<StyleNode> shownNodes;
+        List<StyleNode> hiddenNodes;
 
-        public List<TextStyleNode> getShownNodes() {
+        public List<StyleNode> getShownNodes() {
             return shownNodes;
         }
 
-        public List<TextStyleNode> getHiddenNodes() {
+        public List<StyleNode> getHiddenNodes() {
             return hiddenNodes;
         }
     }
@@ -457,7 +434,7 @@ public class StyleViewer extends ProjectionViewer {
     }
 
     class StyleNodeVisibleEventChecker implements PaintListener {
-        List<TextStyleNode> visibleNodes;
+        List<StyleNode> visibleNodes;
 
         StyleNodeVisibleEventChecker() {
             visibleNodes = new ArrayList<>();
@@ -469,14 +446,14 @@ public class StyleViewer extends ProjectionViewer {
 
         @Override
         public void paintControl(PaintEvent paintEvent) {
-            List<TextStyleNode> oldVisibleNodes = visibleNodes;
+            List<StyleNode> oldVisibleNodes = visibleNodes;
             IRegion visibleRegion = getViewportRegion();
             StyleDocument doc = getDocument();
-            visibleNodes = doc.getTextStyleNodes(visibleRegion.getOffset(), visibleRegion.getLength());
-            List<TextStyleNode> shownNodes = visibleNodes.stream().
+            visibleNodes = doc.getStyleNodes(visibleRegion.getOffset(), visibleRegion.getLength());
+            List<StyleNode> shownNodes = visibleNodes.stream().
                 filter(n -> !oldVisibleNodes.contains(n)).
                 collect(Collectors.toList());
-            List<TextStyleNode> hiddenNodes = oldVisibleNodes.stream().
+            List<StyleNode> hiddenNodes = oldVisibleNodes.stream().
                 filter(n -> !visibleNodes.contains(n)).
                 collect(Collectors.toList());
 
@@ -500,7 +477,7 @@ public class StyleViewer extends ProjectionViewer {
                 return;
 
             int cursorType = -1;
-            String value = (String)node.getCascadedAttribute(StyleAttribute.ATTRIBUTE_CURSOR);
+            String value = (String)node.getContextAttribute(StyleAttribute.CURSOR);
             if (value != null) {
                 switch (value) {
                 case "arrow":
@@ -538,50 +515,6 @@ public class StyleViewer extends ProjectionViewer {
                 return;
 
             st.setCursor(null);
-        }
-    }
-
-    class FunctionExecutor extends StyleMouseAdapter {
-        @Override
-        public void onEnter(StyleViewer viewer, StyleNode node, MouseEvent event) {
-            executeFunc(viewer, node, StyleAttribute.ATTRIBUTE_ONENTER, event);
-        }
-
-        @Override
-        public void onExit(StyleViewer viewer, StyleNode node) {
-            executeFunc(viewer, node, StyleAttribute.ATTRIBUTE_ONEXIT, null);
-        }
-
-        @Override
-        public void onMove(StyleViewer viewer, StyleNode node, MouseEvent event) {
-            executeFunc(viewer, node, StyleAttribute.ATTRIBUTE_ONMOVE, event);
-        }
-
-        @Override
-        public void onClick(StyleViewer viewer, StyleNode node, MouseEvent event) {
-            executeFunc(viewer, node, StyleAttribute.ATTRIBUTE_ONCLICK, event);
-        }
-
-        @Override
-        public void onHover(StyleViewer viewer, StyleNode node, MouseEvent event) {
-            executeFunc(viewer, node, StyleAttribute.ATTRIBUTE_ONHOVER, event);
-        }
-
-        private void executeFunc(StyleViewer viewer, StyleNode node, StyleAttribute attr, MouseEvent event) {
-            while (node != null) {
-                String name = node.getAttribute(attr);
-                if (JUtils.isNotEmpty(name)) {
-                    EventFunction func = funcMap.get(name);
-                    if (func == null) {
-                        throw new IllegalStateException(String.format("Event function [%s] is not defined.", name));
-                    }
-                    if (func != null) {
-                        func.execute(viewer, node, attr, event);
-                    }
-                }
-
-                node = node.getParent();
-            }
         }
     }
 

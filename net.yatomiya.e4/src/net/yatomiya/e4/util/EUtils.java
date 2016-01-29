@@ -10,6 +10,7 @@ package net.yatomiya.e4.util;
 import java.lang.reflect.*;
 import java.util.*;
 import org.eclipse.e4.core.contexts.*;
+import org.eclipse.e4.ui.workbench.*;
 import org.eclipse.swt.widgets.*;
 import net.yatomiya.e4.*;
 
@@ -61,6 +62,14 @@ public class EUtils {
         for (String key : map.keySet()) {
             JUtils.println(String.format("%s : [%s]", key, map.get(key)));
         }
+    }
+
+    public static void exit() {
+        get(IWorkbench.class).close();
+    }
+
+    public static void restart() {
+        get(IWorkbench.class).restart();
     }
 
     public static Display getDisplay() {

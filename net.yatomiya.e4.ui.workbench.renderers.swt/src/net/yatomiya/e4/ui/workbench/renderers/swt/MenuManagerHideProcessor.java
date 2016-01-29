@@ -100,13 +100,17 @@ public class MenuManagerHideProcessor implements IMenuListener2 {
 						Object contribution = currentMenuElement.getObject();
 						IEclipseContext dynamicMenuContext = EclipseContextFactory.create();
 
-						ArrayList<MMenuElement> mel = entry.getValue();
-
                         // net_yatomiya_e4_ui_workbench_renderers_swt
                         {
+                            // このブロックが非同期で実行されるまでに、他の場所からモデルが破棄されている可能性がある。 
+                            if (contribution == null)
+                                return;
+
                             dynamicMenuContext.set(MDynamicMenuContribution.class, (MDynamicMenuContribution)currentMenuElement);
                             dynamicMenuContext.set(MMenu.class, menuModel);
                         }
+
+						ArrayList<MMenuElement> mel = entry.getValue();
 
 						dynamicMenuContext.set(List.class, mel);
 						IEclipseContext parentContext = modelService.getContainingContext(currentMenuElement);
@@ -127,7 +131,7 @@ public class MenuManagerHideProcessor implements IMenuListener2 {
 							}
 						}
 // net_yatomiya_e4_ui_workbench_renderers_swt
-// move to above.
+// move above.
 //						currentMenuElement.getTransientData()
 //								.remove(MenuManagerShowProcessor.DYNAMIC_ELEMENT_STORAGE_KEY);
 					}

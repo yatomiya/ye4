@@ -7,15 +7,13 @@
  ******************************************************************************/
 package net.yatomiya.e4.ui.image;
 
-import java.util.*;
 import org.eclipse.swt.*;
 import org.eclipse.swt.graphics.*;
 import net.yatomiya.e4.services.image.*;
 import net.yatomiya.e4.ui.util.*;
 
 public class ImageUtils {
-    private ImageUtils() {
-    }
+    public static final String HANDLER_IMAGE_URL = "net.yatomiya.e4.handler.image.url";
 
     public static Image[] allocateImages(ImageLoader loader) throws SWTException {
         return allocateImages(loader, -1, -1);
@@ -43,7 +41,7 @@ public class ImageUtils {
             case SWT.DM_UNSPECIFIED:
                 break;
             }
-                
+
             Image frameImage = new Image(null, data);
 
             GC gc = new GC(currentImage);

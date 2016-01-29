@@ -80,10 +80,6 @@ public class JUtils {
         return str == null || str.equals("");
     }
 
-    public static boolean isNotEmpty(String str) {
-        return !isEmpty(str);
-    }
-
     public static int clamp(int v, int min, int max) {
         if (v < min)
             return min;
@@ -158,6 +154,24 @@ public class JUtils {
 
     public static long getCurrentTime() {
         return System.currentTimeMillis();
+    }
+
+    public static long timeWith(Runnable runner) {
+        long start = System.nanoTime();
+        runner.run();
+        long end = System.nanoTime();
+        return end - start;
+    }
+
+    public static void printTimeWith(Runnable runner) {
+        long time = timeWith(runner);
+        long frag = time;
+        long sec = 0;
+        if (time >= 1000000000) {
+            sec = frag / 1000000000;
+            frag -= sec * 1000000000;
+        }
+        JUtils.println(String.format("%ds %d", sec, frag));
     }
 
     /**

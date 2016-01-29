@@ -20,29 +20,6 @@ public class StorageManager {
     File storageRootDirectory;
     File persistenceFile;
 
-    static class EntryData {
-        String url;
-        String filename;
-        long fileByteSize;
-        long lastImageAccessTime;
-        long lastNetworkAccessTime;
-        long lastNetworkUpdateTime;
-        ImageEvent lastUpdateErrorEvent;
-
-        EntryData(String url, String filename) {
-            this.url = url;
-            this.filename = filename;
-            fileByteSize = -1;
-
-            long currentTime = JUtils.getCurrentTime();
-            lastImageAccessTime = currentTime;
-            lastNetworkAccessTime = currentTime;
-            lastNetworkUpdateTime = currentTime;
-
-            lastUpdateErrorEvent = null;
-        }
-    }
-
     static class PersistentData {
         long maxStorageByteSize = 1024*1024*1024;
         long maxFileCount = 65535;
@@ -61,7 +38,7 @@ public class StorageManager {
             throw new IllegalStateException(e);
         }
 
-        persistenceFile = new File(storageRootDirectory, "storage.ser");
+        persistenceFile = new File(service.getRootDirectory(), "storage.ser");
     }
 
     public void load() {
@@ -85,8 +62,8 @@ public class StorageManager {
         EntryData data = CUtils.findFirst(pData.entryList, d -> url.equals(d.url));
         if (data == null) {
             String filename = StringUtils.digest(url);
-            String ext = HttpUtils.getPathExtension(HttpUrl.parse(url));
-            if (JUtils.isNotEmpty(ext))
+            String ext = StringUtils.getExtension(HttpUtils.getPathName(HttpUrl.parse(url)));
+            if (!JUtils.isEmpty(ext))
                 filename += "." + ext;
 
             data= new EntryData(url, filename);
@@ -132,4 +109,5 @@ public class StorageManager {
         return pData.maxStorageByteSize;
     }
 }
+
 

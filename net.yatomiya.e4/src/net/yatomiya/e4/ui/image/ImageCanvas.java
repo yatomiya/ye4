@@ -7,12 +7,10 @@
  ******************************************************************************/
 package net.yatomiya.e4.ui.image;
 
-import org.eclipse.swt.*;
 import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.widgets.*;
 import net.yatomiya.e4.services.image.*;
-import net.yatomiya.e4.ui.image.*;
 import net.yatomiya.e4.ui.util.*;
 import net.yatomiya.e4.util.*;
 

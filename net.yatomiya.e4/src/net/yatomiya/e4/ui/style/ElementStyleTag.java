@@ -9,15 +9,13 @@ package net.yatomiya.e4.ui.style;
 
 import org.jsoup.nodes.*;
 
-
-
 public class ElementStyleTag extends StyleTag {
     public ElementStyleTag(String tag, boolean isBlock) {
         super(tag, isBlock);
     }
 
     @Override
-    protected void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
+    public void parse(Node node, StyleNode styleNode, StyleNodeBuilder builder) {
         Element e = (Element)node;
         boolean doChildren = buildOpenTag(e, styleNode, builder);
         if (doChildren) {

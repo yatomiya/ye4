@@ -9,7 +9,7 @@ package net.yatomiya.e4.util;
 
 import java.util.*;
 
-// Best memory usage, but worst performance.
+// Map with best memory usage, worst performance.
 public class SmallMap<K, V> implements Map<K, V> {
     private Object[] kvs;
 

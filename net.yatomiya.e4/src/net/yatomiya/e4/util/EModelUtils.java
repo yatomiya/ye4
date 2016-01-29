@@ -9,6 +9,7 @@ package net.yatomiya.e4.util;
 
 import java.util.*;
 import java.util.List;
+import java.util.function.*;
 import org.eclipse.e4.ui.model.application.*;
 import org.eclipse.e4.ui.model.application.descriptor.basic.*;
 import org.eclipse.e4.ui.model.application.ui.*;
@@ -16,7 +17,6 @@ import org.eclipse.e4.ui.model.application.ui.advanced.*;
 import org.eclipse.e4.ui.model.application.ui.basic.*;
 import org.eclipse.e4.ui.model.application.ui.menu.*;
 import org.eclipse.e4.ui.services.*;
-import org.eclipse.e4.ui.workbench.*;
 import org.eclipse.e4.ui.workbench.modeling.*;
 import org.eclipse.emf.ecore.*;
 import org.eclipse.emf.ecore.util.*;
@@ -43,7 +43,7 @@ public class EModelUtils {
         return getService().getPartDescriptor(id);
     }
 
-    public static <T extends MMenuElement> List<T> findMenus(MPart part, Class<T> clazz, Selector selector) {
+    public static <T extends MMenuElement> List<T> findMenus(MPart part, Class<T> clazz, Predicate<T> selector) {
         List<T> list = new ArrayList<>();
         for (MMenu m : part.getMenus()) {
             list.addAll(findElements(m, clazz, selector));
@@ -51,32 +51,36 @@ public class EModelUtils {
         return list;
     }
 
-    public static <T> List<T> findElements(MUIElement searchRoot, Class<T> clazz, int searchFlags, Selector selector) {
-        if (selector == null)
-            selector = (e) -> { return true; };
-
-        return getService().findElements(searchRoot, clazz, searchFlags, selector);
+    public static <T extends MApplicationElement> List<T> findElements(MUIElement searchRoot, Class<T> clazz, int searchFlags, Predicate<T> selector) {
+        return getService().findElements(searchRoot, clazz, searchFlags, (e) -> selector == null ? true : selector.test((T)e));
     }
 
-    public static <T> List<T> findElements(MUIElement searchRoot, Class<T> clazz, Selector selector) {
-        return findElements(searchRoot, clazz, EModelService.ANYWHERE, selector);
+    public static <T extends MApplicationElement> T find(MUIElement searchRoot, Class<T> clazz, int searchFlags, Predicate<T> selector) {
+        return CUtils.getFirst(findElements(searchRoot, clazz, searchFlags, selector));
     }
 
-    public static <T> List<T> findElements(Class<T> clazz, Selector selector) {
-        MApplication app = getApplication();
-        return findElements(app, clazz, EModelService.ANYWHERE, selector);
+    public static <T extends MApplicationElement> List<T> findElements(MUIElement searchRoot, Class<T> clazz, Predicate<T> selector) {
+        return findElements(searchRoot, clazz, EModelService.ANYWHERE | EModelService.IN_PART, selector);
     }
 
-    public static <T> List<T> findElements(MUIElement searchRoot, Class<T> clazz) {
-        return findElements(searchRoot, clazz, EModelService.ANYWHERE, null);
+    public static <T extends MApplicationElement> T find(MUIElement searchRoot, Class<T> clazz, Predicate<T> selector) {
+        return CUtils.getFirst(findElements(searchRoot, clazz, selector));
     }
 
-    public static <T> List<T> findElements(Class<T> clazz) {
-        return findElements(clazz, null);
+    public static <T extends MApplicationElement> List<T> findElements(MUIElement searchRoot, Class<T> clazz, String elementId) {
+        return findElements(searchRoot, clazz, EModelService.ANYWHERE | EModelService.IN_PART, (e) -> e.getElementId().equals(elementId));
     }
 
-    public static MUIElement find(String id, MUIElement searchRoot) {
-        return getService().find(id, searchRoot);
+    public static <T extends MApplicationElement> T find(MUIElement searchRoot, Class<T> clazz, String elementId) {
+        return CUtils.getFirst(findElements(searchRoot, clazz, elementId));
+    }
+
+    public static <T extends MApplicationElement> List<T> findElements(MUIElement searchRoot, Class<T> clazz) {
+        return findElements(searchRoot, clazz, EModelService.ANYWHERE | EModelService.IN_PART, (e) -> true);
+    }
+
+    public static <T extends MApplicationElement> T find(MUIElement searchRoot, Class<T> clazz) {
+        return CUtils.getFirst(findElements(searchRoot, clazz));
     }
 
     public static <T extends MUIElement> T cloneElement(T src) {
@@ -121,7 +125,7 @@ public class EModelUtils {
 
     public static MWindow getActiveWindow() {
         Shell activeShell = (Shell)EUtils.get(IServiceConstants.ACTIVE_SHELL);
-        for (MWindow win : findElements(MWindow.class)) {
+        for (MWindow win : findElements(getApplication(), MWindow.class)) {
             if (win.getWidget() == activeShell)
                 return win;
         }
