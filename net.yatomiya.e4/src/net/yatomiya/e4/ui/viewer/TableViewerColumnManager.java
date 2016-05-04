@@ -223,7 +223,7 @@ public class TableViewerColumnManager {
         return null;
     }
 
-    public String persist() {
+    public String serialize() {
         Table table = viewer.getTable();
 
         TableColumn[] columns = table.getColumns();
@@ -240,7 +240,7 @@ public class TableViewerColumnManager {
         return s;
     }
 
-    public void restore(String serializedValue) {
+    public void deserialize(String serializedValue) {
         Object[] v = null;
         try {
             v = (Object[])IOUtils.deserializeObject(serializedValue);

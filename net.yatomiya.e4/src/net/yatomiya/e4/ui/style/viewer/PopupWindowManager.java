@@ -125,7 +125,7 @@ public class PopupWindowManager {
         popupWindow.getShell().setVisible(true);
     }
 
-    void deactivatePopupWindow() {
+    public void deactivatePopupWindow() {
         if (!isPopupWindowActive())
             return;
 
@@ -145,9 +145,9 @@ public class PopupWindowManager {
         openMouseEvent = null;
     }
 
-    void checkPopupWindowDeactivation() {
+    public void checkPopupWindowDeactivation() {
         if (isPopupWindowActive()) {
-            if (!popupWindow.checkCursorInShell()) {
+            if (!popupWindow.isSticky()) {
                 deactivatePopupWindow();
             }
         }

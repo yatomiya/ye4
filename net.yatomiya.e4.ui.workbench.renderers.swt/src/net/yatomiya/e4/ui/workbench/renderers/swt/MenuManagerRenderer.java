@@ -84,6 +84,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.events.*;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 
@@ -1169,7 +1170,7 @@ MenuManagerEventHelper.getInstance()
 		// Bug 467000: Avoid repeatedly updating menu managers
 		// This workaround is opt-in for 4.5
 
-        // net_yatomiya_e4_ui_workbench_renderers_swt
+        // >>> net_yatomiya_e4_ui_workbench_renderers_swt
         // always enable workaround.
 /*
 		boolean workaroundEnabled = Boolean.getBoolean("eclipse.workaround.bug467000"); //$NON-NLS-1$
@@ -1178,6 +1179,8 @@ MenuManagerEventHelper.getInstance()
 			return;
 		}
 */
+        // <<< net_yatomiya_e4_ui_workbench_renderers_swt
+
 		synchronized (mgrToUpdate) {
 			if (this.mgrToUpdate.isEmpty()) {
 				Display display = context.get(Display.class);
@@ -1197,13 +1200,15 @@ MenuManagerEventHelper.getInstance()
 					}
 					});
 				}
-                // net_yatomiya_e4_ui_workbench_renderers_swt
+                // >>> net_yatomiya_e4_ui_workbench_renderers_swt
                 //this.mgrToUpdate.add(mgr);
+                // <<< net_yatomiya_e4_ui_workbench_renderers_swt
 			}
-            // net_yatomiya_e4_ui_workbench_renderers_swt
+            // >>> net_yatomiya_e4_ui_workbench_renderers_swt
             // Added.
             // It should be added when mgrToUpdate.size() > 0... bug ?
             this.mgrToUpdate.add(mgr);
+            // << net_yatomiya_e4_ui_workbench_renderers_swt
 		}
 	}
 }

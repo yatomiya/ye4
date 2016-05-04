@@ -12,7 +12,15 @@ import org.eclipse.e4.core.di.annotations.*;
 import org.eclipse.swt.*;
 import org.eclipse.swt.widgets.*;
 
-public class DummyHandler {
+/**
+ * Top trim の最初の ToolControl として指定する。
+ * トップトリムのツールバーを動かしてトップトリムのツールアイテムがなくなってしまうと自動的に
+ * トップトリム領域が消えてしまうのだが、消えた後に動かそうとしてもトップトリムに移動させることができない。
+ * 左右下のトリムは、消えた後にツールアイテムを移動させると復活するので、多分バグ。
+ * workaround として、動かせないサイズ０のダミーコントロールをひとつ置いておいて、トップトリムのツールアイテムが
+ * 必ず残るようにする。
+ */
+public class DummyToolControlHandler {
     @PostConstruct
     public void postConstruct(Composite parent) {
         Label label = new Label(parent, SWT.NONE);

@@ -85,9 +85,10 @@ public class MenuManagerHideProcessor implements IMenuListener2 {
 
 				toBeHidden.put((MDynamicMenuContribution) currentMenuElement, mel);
 
-                // net_yatomiya_e4_ui_workbench_renderers_swt
+                // >>> net_yatomiya_e4_ui_workbench_renderers_swt
                 currentMenuElement.getTransientData()
                     .remove(MenuManagerShowProcessor.DYNAMIC_ELEMENT_STORAGE_KEY);
+                // <<< net_yatomiya_e4_ui_workbench_renderers_swt
 			}
 		}
 
@@ -100,15 +101,16 @@ public class MenuManagerHideProcessor implements IMenuListener2 {
 						Object contribution = currentMenuElement.getObject();
 						IEclipseContext dynamicMenuContext = EclipseContextFactory.create();
 
-                        // net_yatomiya_e4_ui_workbench_renderers_swt
-                        {
-                            // このブロックが非同期で実行されるまでに、他の場所からモデルが破棄されている可能性がある。 
-                            if (contribution == null)
-                                return;
+                        // >>> net_yatomiya_e4_ui_workbench_renderers_swt
+                        // このブロックが非同期で実行されるまでに、他の場所からモデルが破棄されている可能性がある。 
+                        if (contribution == null)
+                            return;
 
-                            dynamicMenuContext.set(MDynamicMenuContribution.class, (MDynamicMenuContribution)currentMenuElement);
-                            dynamicMenuContext.set(MMenu.class, menuModel);
-                        }
+                        dynamicMenuContext.set(MDynamicMenuContribution.class, (MDynamicMenuContribution)currentMenuElement);
+                        dynamicMenuContext.set(MMenu.class, menuModel);
+                        // <<< net_yatomiya_e4_ui_workbench_renderers_swt
+
+						ArrayList<MMenuElement> mel = entry.getValue();
 
 						ArrayList<MMenuElement> mel = entry.getValue();
 
@@ -130,10 +132,11 @@ public class MenuManagerHideProcessor implements IMenuListener2 {
 								item.setVisible(false);
 							}
 						}
-// net_yatomiya_e4_ui_workbench_renderers_swt
+// >>> net_yatomiya_e4_ui_workbench_renderers_swt
 // move above.
 //						currentMenuElement.getTransientData()
 //								.remove(MenuManagerShowProcessor.DYNAMIC_ELEMENT_STORAGE_KEY);
+// <<< net_yatomiya_e4_ui_workbench_renderers_swt
 					}
 				}
 			});

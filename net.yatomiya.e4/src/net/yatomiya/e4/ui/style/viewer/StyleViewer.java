@@ -296,7 +296,6 @@ public class StyleViewer extends ProjectionViewer {
     }
 
     public void scrollToLine(int lineIndex) {
-        StyledText st = getTextWidget();
         setTopIndex(lineIndex);
     }
 
@@ -335,6 +334,15 @@ public class StyleViewer extends ProjectionViewer {
         StyledText st = getTextWidget();
         Rectangle bounds = st.getBounds();
         st.setTopPixel(st.getTopPixel() + bounds.height);
+    }
+
+    public void scrollToOffset(int offset) {
+        if (getDocument() != null) {
+            try {
+                scrollToLine(getDocument().getLineOfOffset(offset));
+            } catch (BadLocationException e) {
+            }
+        }
     }
 
     public StyleNode getStyleNode(int offset) {

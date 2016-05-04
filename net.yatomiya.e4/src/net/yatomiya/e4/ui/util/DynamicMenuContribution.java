@@ -8,7 +8,6 @@
 package net.yatomiya.e4.ui.util;
 
 import java.util.*;
-import org.eclipse.e4.ui.model.application.ui.basic.*;
 import org.eclipse.e4.ui.model.application.ui.menu.*;
 import net.yatomiya.e4.util.*;
 
@@ -17,41 +16,27 @@ public class DynamicMenuContribution {
         return EModelUtils.createElement(MDirectMenuItem.class);
     }
 
-    public static List<MMenuElement> createContextMenu(
-        List<MMenu> menuList,
-        String holderMenuId,
-        String contextMenuId) {
-        MMenu holderMenu = CUtils.findFirst(menuList, e -> e.getElementId().equals(holderMenuId));
-        if (holderMenu == null)
-            return Collections.EMPTY_LIST;
-        MMenu contextMenu = (MMenu)CUtils.findFirst(holderMenu.getChildren(), e -> e.getElementId().equals(contextMenuId));
-        if (contextMenu == null)
-            return Collections.EMPTY_LIST;
-
-        return CUtils.map(contextMenu.getChildren(), e -> EModelUtils.cloneElement(e));
-    }
-
-    public static List<MMenuElement> addContextMenuBlock(
-        List<MMenuElement> list,
-        List<MMenu> menuList,
-        String holderMenuId,
-        String contextMenuId) {
-        if (list.size() > 0) {
-            list.add(EModelUtils.createElement(MMenuSeparator.class));
+    public static void addDynamicMenu(
+        List<MMenuElement> items,
+        List<MMenuElement> addItems) {
+        if (items.size() > 0) {
+            items.add(EModelUtils.createElement(MMenuSeparator.class));
         }
 
-        List<MMenuElement> elements = createContextMenu(menuList, holderMenuId, contextMenuId);
-        list.addAll(elements);
+        addItems = CUtils.map(addItems, e -> EModelUtils.cloneElement(e));
 
-        return elements;
+        items.addAll(addItems);
     }
 
-    public static List<MMenuElement> addContextMenuBlock(
-        List<MMenuElement> list,
-        MPart part,
-        String holderMenuId,
-        String contextMenuId) {
-        return addContextMenuBlock(list, part.getMenus(), holderMenuId, contextMenuId);
+    public static void addDynamicMenu(
+        List<MMenuElement> items,
+        MMenu menuHolder,
+        String addMenuId) {
+        MMenu addMenu = (MMenu)CUtils.findFirst(
+            menuHolder.getChildren(),
+            e -> ((Object)e instanceof MMenu) && e.getElementId().equals(addMenuId));
+        if (addMenu != null) {
+            addDynamicMenu(items, addMenu.getChildren());
+        }
     }
 }
-

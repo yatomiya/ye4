@@ -20,7 +20,7 @@ import net.yatomiya.e4.ui.widgets.*;
  * alternative to jface.MessageDialog, which use Text widget for message body (MessageDialog uses Label widget).
  */
 public class TextMessageDialog extends Dialog {
-    enum Type {
+    public static enum Type {
         NONE,
         ERROR,
         INFORMATION,
@@ -54,6 +54,10 @@ public class TextMessageDialog extends Dialog {
         this.defaultButtonIndex = defaultButtonIndex;
 
         iconImage = getIconImage(type);
+    }
+
+    public TextMessageDialog(Shell parentShell, Type type, String title, String message, int textStyle) {
+        this(parentShell, type, title, message, textStyle, getButtonLabels(type), 0);
     }
 
 	@Override
@@ -174,34 +178,32 @@ public class TextMessageDialog extends Dialog {
         return image;
     }
 
-    static final int DEFAULT_TEXT_STYLE = SWT.MULTI | SWT.READ_ONLY;
-
-    public static TextMessageDialog create(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.NONE, title, message, DEFAULT_TEXT_STYLE | SWT.H_SCROLL | SWT.V_SCROLL, getButtonLabels(Type.NONE), 0);
+    public static TextMessageDialog create(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.NONE, title, message, textStyle, getButtonLabels(Type.NONE), 0);
     }
 
-    public static TextMessageDialog createError(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.ERROR, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.ERROR), 0);
+    public static TextMessageDialog createError(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.ERROR, title, message, textStyle, getButtonLabels(Type.ERROR), 0);
     }
 
-    public static TextMessageDialog createInformation(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.INFORMATION, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.INFORMATION), 0);
+    public static TextMessageDialog createInformation(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.INFORMATION, title, message, textStyle, getButtonLabels(Type.INFORMATION), 0);
     }
 
-    public static TextMessageDialog createQuestion(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.QUESTION, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.QUESTION), 0);
+    public static TextMessageDialog createQuestion(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.QUESTION, title, message, textStyle, getButtonLabels(Type.QUESTION), 0);
     }
 
-    public static TextMessageDialog createWarning(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.WARNING, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.WARNING), 0);
+    public static TextMessageDialog createWarning(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.WARNING, title, message, textStyle, getButtonLabels(Type.WARNING), 0);
     }
 
-    public static TextMessageDialog createConfirm(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.CONFIRM, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.CONFIRM), 0);
+    public static TextMessageDialog createConfirm(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.CONFIRM, title, message, textStyle, getButtonLabels(Type.CONFIRM), 0);
     }
 
-    public static TextMessageDialog createQuestionWithCancel(Shell parentShell, String title, String message) {
-        return new TextMessageDialog(parentShell, Type.QUESTION_WITH_CANCEL, title, message, DEFAULT_TEXT_STYLE, getButtonLabels(Type.QUESTION_WITH_CANCEL), 0);
+    public static TextMessageDialog createQuestionWithCancel(Shell parentShell, String title, String message, int textStyle) {
+        return new TextMessageDialog(parentShell, Type.QUESTION_WITH_CANCEL, title, message, textStyle, getButtonLabels(Type.QUESTION_WITH_CANCEL), 0);
     }
 
 }

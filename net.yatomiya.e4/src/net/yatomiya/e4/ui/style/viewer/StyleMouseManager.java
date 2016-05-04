@@ -286,6 +286,8 @@ public class StyleMouseManager {
 
         @Override
         public void textChanged(TextEvent e) {
+            // 表示中のテキストが変更されたとき、カーソルが動かずに
+            // カーソルの下のノードが変わったときに、ノード間移動イベントを発生させる。
             StyledText st = viewer.getTextWidget();
             if (!UIUtils.isDisposed(st)) {
                 Display display = st.getDisplay();

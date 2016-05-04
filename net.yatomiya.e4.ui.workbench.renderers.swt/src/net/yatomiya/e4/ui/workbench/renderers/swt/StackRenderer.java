@@ -81,6 +81,8 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
+import org.eclipse.swt.events.MenuAdapter;
+import org.eclipse.swt.events.MenuEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -103,6 +105,8 @@ import org.eclipse.swt.widgets.Widget;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.w3c.dom.css.CSSValue;
+import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.EObject;
 import net.yatomiya.e4.ui.internal.workbench.renderers.swt.*;
 
 /**
@@ -1408,19 +1412,21 @@ public class StackRenderer extends LazyStackRenderer implements IPreferenceChang
 	}
 
 	private void openMenuFor(MPart part, CTabFolder folder, Point point) {
-        // net_yatomiya_e4_ui_workbench_renderers_swt
+        // >>> net_yatomiya_e4_ui_workbench_renderers_swt
         // Show View Menu when tabfolder bar is right clicked.
-        // start.
         {
             Menu menu = null;
             if (part != null && part.getWidget() != null) {
                 MMenu menuModel = getViewMenu(part);
+
                 if (menuModel != null && menuModel.isToBeRendered()) {
                     Control control = (Control) part.getWidget();
                     menu = (Menu) renderer.createGui(menuModel, control.getShell(), part.getContext());
                 }
             }
             if (menu != null) {
+                final Menu swtMenu = menu;
+
                 menu.setData(STACK_SELECTED_PART, part);
                 menu.setLocation(point.x, point.y);
                 menu.setVisible(true);
@@ -1432,7 +1438,6 @@ public class StackRenderer extends LazyStackRenderer implements IPreferenceChang
 
                 // ここで dispose すると、 @Execute の呼び出しまでキャンセルされてしまう。
                 // すこし間を空ける。
-                final Menu swtMenu = menu;
                 display.asyncExec(new Runnable() {
                         public void run() {
                             swtMenu.dispose();
@@ -1440,17 +1445,17 @@ public class StackRenderer extends LazyStackRenderer implements IPreferenceChang
                     });
             }
         }
-        // end.
-        // net_yatomiya_e4_ui_workbench_renderers_swt
+        // <<< net_yatomiya_e4_ui_workbench_renderers_swt
 
-// net_yatomiya_e4_ui_workbench_renderers_swt
-//original. comment out.
+// >>> net_yatomiya_e4_ui_workbench_renderers_swt
+//original code. comment out.
 /*
 		Menu tabMenu = createTabMenu(folder, part);
 		tabMenu.setData(STACK_SELECTED_PART, part);
 		tabMenu.setLocation(point.x, point.y);
 		tabMenu.setVisible(true);
 */
+// <<< net_yatomiya_e4_ui_workbench_renderers_swt
 	}
 
 	protected boolean isClosable(MPart part) {

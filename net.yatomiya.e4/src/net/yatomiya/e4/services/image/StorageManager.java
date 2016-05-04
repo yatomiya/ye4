@@ -73,7 +73,7 @@ public class StorageManager {
         return data;
     }
 
-    File createImageStorageFile(String filename) {
+    File getImageStorageFile(String filename) {
         return new File(storageRootDirectory, filename);
     }
 
@@ -92,7 +92,7 @@ public class StorageManager {
             } else {
                 if (i > pData.maxFileCount
                     || total > pData.maxStorageByteSize) {
-                    File file = createImageStorageFile(d.filename);
+                    File file = getImageStorageFile(d.filename);
                     file.delete();
                     pData.entryList.remove(d);
                 }

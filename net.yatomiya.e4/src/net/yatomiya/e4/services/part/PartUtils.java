@@ -9,11 +9,10 @@ package net.yatomiya.e4.services.part;
 
 import java.util.*;
 import java.util.function.*;
-import org.eclipse.e4.ui.model.application.*;
+import java.util.stream.*;
 import org.eclipse.e4.ui.model.application.ui.*;
 import org.eclipse.e4.ui.model.application.ui.basic.*;
 import org.eclipse.e4.ui.workbench.*;
-import org.eclipse.e4.ui.workbench.modeling.*;
 import net.yatomiya.e4.services.*;
 import net.yatomiya.e4.util.*;
 
@@ -24,13 +23,6 @@ public class PartUtils {
         return part.getPersistedState().get(PartService.PART_UUID_KEY);
     }
 
-    public static final Selector ALL_SELECTOR = new Selector() {
-        @Override
-        public boolean select(MApplicationElement element) {
-            return true;
-        }
-    };
-
     private static PartService getService() {
         if (partService == null) {
             partService = EUtils.get(PartService.class);
@@ -38,43 +30,40 @@ public class PartUtils {
         return partService;
     }
 
-    public static MPart findPart(Function<MPart, Boolean> selector) {
-        List<MPart> list = findParts(selector);
-        return list.size() > 0 ? list.get(0) : null;
+    public static MPart openPart(String descId) {
+        return openPart(descId, true);
     }
 
-    public static List<MPart> listParts() {
-        return findParts((part) -> true);
+    public static MPart openPart(String descId, boolean showIfExists) {
+        return openPart(descId, showIfExists, PartState.ACTIVATE);
     }
 
-    public static List<MPart> findParts(Function<MPart, Boolean> selector) {
-        return EModelUtils.findElements(
-            EModelUtils.getActivePerspective(),
-            MPart.class,
-            EModelService.IN_ACTIVE_PERSPECTIVE,
-            element -> selector.apply(((MPart)element)));
+    public static MPart openPart(String descId, boolean showIfExists, PartState state) {
+        return openPart(descId, showIfExists, state, PartService.PART_CONTAINER_TYPE_DEFAULT);
     }
 
-    public static MPart findPart(String id) {
-        List<MPart> list = findParts(id);
-        if (list.size() > 0)
-            return list.get(0);
-        return null;
+    public static MPart openPart(String descId, boolean showIfExists, PartState state, String containerType) {
+        return openPart(descId, showIfExists, state, PartService.PART_CONTAINER_TYPE_DEFAULT, null);
     }
 
-    public static List<MPart> findParts(String id) {
-        return findParts(part -> part.getElementId().equals(id));
-    }
-
-    public static List<MPart> findVisibleParts() {
-        return findParts(part -> part.isVisible() && part.isToBeRendered());
-    }
-
-    public static void openPartsWithFirstVisible(List<MPart> partList) {
-        for (int i = 0; i < partList.size(); i++) {
-            PartService.PartState state = i == 0 ? PartService.PartState.ACTIVATE : PartService.PartState.CREATE;
-            getService().openPart(partList.get(i), state);
+    public static MPart openPart(String descId, boolean showIfExists, PartState state, String containerType, Consumer<MPart> initializer) {
+        PartService service = getService();
+        MPart part = null;
+        if (showIfExists) {
+            part = service.findPart(descId);
         }
+        if (part == null) {
+            part = service.createPart(descId);
+        }
+
+        if (part != null) {
+            if (initializer != null) {
+                initializer.accept(part);
+            }
+
+            service.openPart(part, state, containerType);
+        }
+        return part;
     }
 
     public static void disposeElement(MUIElement element) {
@@ -127,6 +116,30 @@ public class PartUtils {
                     func.accept((MPart)e.element);
                 }
             });
+    }
+
+    public static List<MPart> getCloseableParts(MPartStack stack) {
+        return stack.getChildren().stream()
+            .filter(e -> (e instanceof MPart) && (((MPart)e).isCloseable()))
+            .map(e -> (MPart)e)
+            .collect(Collectors.toList());
+    }
+
+    public static void closeTabAll(MPartStack stack) {
+        for (MPart part : getCloseableParts(stack)) {
+            getService().hidePart(part);
+        }
+    }
+
+    public static void closeOtherTabAll(MPart part) {
+        if ((Object)part.getParent() instanceof MPartStack) {
+            MPartStack parent = (MPartStack)(Object)part.getParent();
+            for (MPart e : getCloseableParts(parent)) {
+                if (e != part) {
+                    getService().hidePart(e);
+                }
+            }
+        }
     }
 }
 

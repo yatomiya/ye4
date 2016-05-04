@@ -33,7 +33,7 @@ public class ShowViewHandler {
 
     protected void doOkPressed(MPartDescriptor[] selection) {
         for (MPartDescriptor d : selection) {
-            EUtils.get(PartService.class).openPart(d.getElementId(), true);
+            PartUtils.openPart(d.getElementId(), true);
         }
     }
 }

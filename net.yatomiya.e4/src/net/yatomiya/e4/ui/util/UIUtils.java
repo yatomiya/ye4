@@ -288,6 +288,7 @@ public class UIUtils {
     }
 
     public static void doWhenLineMetricsCalculatingFinished(StyledText st, boolean disableWhileWaiting, Runnable runner) {
+        Control currentFocus = st.getDisplay().getFocusControl();
         boolean isEnabled = st.getEnabled();
         if (isEnabled && disableWhileWaiting)
             st.setEnabled(false);
@@ -300,11 +301,17 @@ public class UIUtils {
                 }
 
                 if (!isLineMetricsCalculating(st)) {
-                    runner.run();
                     cancel();
-
-                    if (isEnabled && disableWhileWaiting)
+                    runner.run();
+                    if (isEnabled && disableWhileWaiting) {
                         st.setEnabled(true);
+
+                        // setEnabled(false) でいったんフォーカスが外れてしまうので、
+                        // enable にする際にフォーカスも復帰させる。
+                        if (currentFocus == st) {
+                            st.setFocus();
+                        }
+                    }
                 }
             }
         }.start();

@@ -23,7 +23,7 @@ public class NextViewHandler extends PreviousViewHandler {
                         @Named(IServiceConstants.ACTIVE_PART) @Optional MPart activePart) {
         MPart p = EModelUtils.getActivePart();
 
-        List<MPart> list = PartUtils.findVisibleParts();
+        List<MPart> list = partSrv.findVisibleParts();
         int index = list.indexOf(activePart);
         index++;
         if (index >= list.size())

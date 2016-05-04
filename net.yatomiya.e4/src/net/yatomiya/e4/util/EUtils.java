@@ -7,6 +7,7 @@
  ******************************************************************************/
 package net.yatomiya.e4.util;
 
+import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import org.eclipse.e4.core.contexts.*;
@@ -94,5 +95,9 @@ public class EUtils {
 
     public static void timerExec(long startms, Runnable runner) {
         getDisplay().timerExec((int)startms, runner);
+    }
+
+    public static void saveApplicationModel() throws IOException {
+        get(IModelResourceHandler.class).save();
     }
 }

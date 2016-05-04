@@ -150,11 +150,10 @@ public class MenuManagerShowProcessor implements IMenuListener2 {
 						.create();
 				ArrayList<MMenuElement> mel = new ArrayList<>();
 
-                // net_yatomiya_e4_ui_workbench_renderers_swt
-                {
-                    dynamicMenuContext.set(MDynamicMenuContribution.class, (MDynamicMenuContribution)currentMenuElement);
-                    dynamicMenuContext.set(MMenu.class, menuModel);
-                }
+                // >>> net_yatomiya_e4_ui_workbench_renderers_swt
+                dynamicMenuContext.set(MDynamicMenuContribution.class, (MDynamicMenuContribution)currentMenuElement);
+                dynamicMenuContext.set(MMenu.class, menuModel);
+                // <<< net_yatomiya_e4_ui_workbench_renderers_swt
 
 				dynamicMenuContext.set(List.class, mel);
 				IEclipseContext parentContext = modelService

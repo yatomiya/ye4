@@ -122,7 +122,7 @@ public class ImageEntry {
 
         eData = service.getStorageManager().getEntryData(url.toString());
 
-        storageFile = service.getStorageManager().createImageStorageFile(eData.filename);
+        storageFile = service.getStorageManager().getImageStorageFile(eData.filename);
 
         {
             typeMap = new HashMap<>();

@@ -13,7 +13,6 @@ import org.eclipse.e4.ui.model.application.ui.basic.*;
 import org.eclipse.e4.ui.services.*;
 import net.yatomiya.e4.services.part.*;
 
-
 public class CloseViewHandler {
     @Execute
     public void execute(PartService partSrv,
@@ -24,12 +23,11 @@ public class CloseViewHandler {
     @CanExecute
     public boolean canExecute(PartService partSrv,
                               @Named(IServiceConstants.ACTIVE_PART) @Optional MPart activePart) {
-        if (activePart != null) {
-            if (activePart.isCloseable())
-                return true;
+        if (activePart != null
+            && activePart.isCloseable()) {
+            return true;
         }
         return false;
     }
-
 }
 

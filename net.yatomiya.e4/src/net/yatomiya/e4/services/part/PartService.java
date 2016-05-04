@@ -8,9 +8,9 @@
 package net.yatomiya.e4.services.part;
 
 import java.util.*;
+import java.util.function.*;
 import org.eclipse.e4.core.contexts.*;
 import org.eclipse.e4.ui.model.application.*;
-import org.eclipse.e4.ui.model.application.descriptor.basic.*;
 import org.eclipse.e4.ui.model.application.ui.*;
 import org.eclipse.e4.ui.model.application.ui.advanced.*;
 import org.eclipse.e4.ui.model.application.ui.basic.*;
@@ -29,19 +29,16 @@ public class PartService {
     public static final String PART_CONTAINER_TYPE = Application.PLUGIN_ID + ".part.container.type";
     public static final String PART_CONTAINER_TYPE_DEFAULT = "default";
 
-    public static enum PartState {
-        CREATE(EPartService.PartState.CREATE),
-        VISIBLE(EPartService.PartState.VISIBLE),
-        ACTIVATE(EPartService.PartState.ACTIVATE);
+    public static interface Event {
+        public static final String BASE = "net/yatomiya/e4/services/part/";
+        public static final String ALL = BASE + "*";
 
-        private EPartService.PartState eState;
-
-        PartState(EPartService.PartState eState) {
-            this.eState = eState;
-        }
-
-        EPartService.PartState getEPartServiceState() {
-            return eState;
+        public static interface Part {
+            public static final String BASE = Event.BASE + "part/";
+            public static final String ALL = BASE + "*";
+            public static final String CREATE = BASE + "create";
+            public static final String OPEN = BASE + "open";
+            public static final String HIDE = BASE + "hide";
         }
     }
 
@@ -112,6 +109,8 @@ public class PartService {
 
     public void hidePart(MPart part) {
         getE4Service().hidePart(part, true);
+
+        context.get(EventService.class).post(Event.Part.HIDE, part);
     }
 
     public void bringToTop(MPart part) {
@@ -135,42 +134,9 @@ public class PartService {
         String sid = UUID.randomUUID().toString().replace("-", "");
         part.getPersistedState().put(PART_UUID_KEY, sid);
 
+        context.get(EventService.class).post(Event.Part.CREATE, part);
+
         return part;
-    }
-
-    public MPart openPart(String descId) {
-        return openPart(descId, true);
-    }
-
-    public MPart openPart(String descId, boolean showIfExists) {
-        return openPart(descId, showIfExists, PartState.ACTIVATE);
-    }
-
-    public MPart openPart(String descId, boolean showIfExists, PartState state) {
-        return openPart(descId, showIfExists, state, PART_CONTAINER_TYPE_DEFAULT);
-    }
-
-    public MPart openPart(String descId, boolean showIfExists, PartState state, String containerType) {
-        MPart part = null;
-        MPartDescriptor desc = EModelUtils.getPartDescriptor(descId);
-
-        if (!desc.isAllowMultiple())
-            showIfExists = true;
-
-        if (showIfExists) {
-            List<MPart> partList = PartUtils.findParts(descId);
-            if (partList.size() > 0) {
-                part = partList.get(0);
-            }
-        }
-
-        if (part == null) {
-            part = createPart(descId);
-            if (!JUtils.isEmpty(containerType)) {
-                part.getPersistedState().put(PartService.PART_CONTAINER_TYPE, containerType);
-            }
-        }
-        return openPart(part, state);
     }
 
     public MPart openPart(MPart part) {
@@ -178,6 +144,17 @@ public class PartService {
     }
 
     public MPart openPart(MPart part, PartState state) {
+        return openPart(part, state, PART_CONTAINER_TYPE_DEFAULT);
+    }
+
+    public MPart openPart(MPart part, PartState state, String containerType) {
+        if (state == null)
+            state = PartState.ACTIVATE;
+
+        if (JUtils.isEmpty(containerType))
+            containerType = PART_CONTAINER_TYPE_DEFAULT;
+        part.getPersistedState().put(PartService.PART_CONTAINER_TYPE, containerType);
+
         if (part.getParent() == null) {
             MPerspective pers = getPerspectiveManager().getActivePerspective();
             MElementContainer container = PerspectiveManager.findPreferredPartContainer(pers, part);
@@ -200,7 +177,41 @@ public class PartService {
             break;
         }
 
+        context.get(EventService.class).post(Event.Part.OPEN, part);
+
         return part;
+    }
+
+    public MPart findPart(Function<MPart, Boolean> selector) {
+        List<MPart> list = findParts(selector);
+        return list.size() > 0 ? list.get(0) : null;
+    }
+
+    public List<MPart> listParts() {
+        return findParts((part) -> true);
+    }
+
+    public List<MPart> findParts(Function<MPart, Boolean> selector) {
+        return EModelUtils.findElements(
+            EModelUtils.getActivePerspective(),
+            MPart.class,
+            EModelService.IN_ACTIVE_PERSPECTIVE,
+            element -> selector.apply(((MPart)element)));
+    }
+
+    public MPart findPart(String descId) {
+        List<MPart> list = findParts(descId);
+        if (list.size() > 0)
+            return list.get(0);
+        return null;
+    }
+
+    public List<MPart> findParts(String descId) {
+        return findParts(part -> part.getElementId().equals(descId));
+    }
+
+    public List<MPart> findVisibleParts() {
+        return findParts(part -> part.isVisible() && part.isToBeRendered());
     }
 
     void switchPerspective(MPerspective perspective) {

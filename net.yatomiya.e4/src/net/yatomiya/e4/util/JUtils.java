@@ -149,7 +149,27 @@ public class JUtils {
     }
 
     public static int sign(long v) {
-        return sign((int)v);
+        if (v == 0)
+            return 0;
+        if (v > 0)
+            return 1;
+        return -1;
+    }
+
+    public static int sign(float v) {
+        if (v == 0)
+            return 0;
+        if (v > 0)
+            return 1;
+        return -1;
+    }
+
+    public static int sign(double v) {
+        if (v == 0)
+            return 0;
+        if (v > 0)
+            return 1;
+        return -1;
     }
 
     public static long getCurrentTime() {
